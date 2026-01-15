@@ -102,6 +102,12 @@ export function EpochBlocksView() {
                           />
                           <Chip
                             size="small"
+                            label="Receptive Fields"
+                            color={epochBlock.has_receptive_fields ? 'success' : 'default'}
+                            icon={epochBlock.has_receptive_fields ? <CheckCircleIcon /> : <ErrorIcon />}
+                          />
+                          <Chip
+                            size="small"
                             label="EpochBlock Preview"
                             color={epochBlock.has_epoch_block_preview ? 'success' : 'default'}
                             icon={epochBlock.has_epoch_block_preview ? <CheckCircleIcon /> : <ErrorIcon />}

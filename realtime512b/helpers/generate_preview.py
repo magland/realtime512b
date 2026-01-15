@@ -13,6 +13,7 @@ from ..figpack_realtime512b.MEASpikeFramesMovie import MEASpikeFramesMovie
 from ..figpack_realtime512b.MEAFiringRatesAndAmplitudes import MEAFiringRatesAndAmplitudes
 from ..figpack_realtime512b.TemplatesView import TemplatesView
 from ..figpack_realtime512b.ClusterSeparationView import ClusterSeparationView, ClusterSeparationViewItem
+from ..figpack_realtime512b.ReceptiveFieldsView import ReceptiveFieldsView
 from .coarse_sorting import find_nearest_neighbors
 
 
@@ -593,6 +594,7 @@ def generate_epoch_block_preview(
     epoch_block_name: str,
     epoch_block_sorting_path: str,
     computed_dir: str,
+    acquisition_dir: str,
     n_channels: int,
     sampling_frequency: float,
     segment_duration_sec: float,
@@ -606,6 +608,7 @@ def generate_epoch_block_preview(
     For epoch blocks:
     - Templates View (from epoch block sorting)
     - Autocorrelograms (from epoch block spike sorting)
+    - Receptive Fields (from receptive fields computation)
     
     Parameters
     ----------
@@ -615,6 +618,8 @@ def generate_epoch_block_preview(
         Path to epoch block spike sorting directory
     computed_dir : str
         Path to computed directory
+    acquisition_dir : str
+        Path to acquisition directory
     n_channels : int
         Number of channels
     sampling_frequency : float
@@ -670,6 +675,23 @@ def generate_epoch_block_preview(
         tab_items.append(vv.TabLayoutItem(
             view=vv.Markdown(content="No spikes found."),
             label="Autocorrelograms"
+        ))
+    
+    # Receptive Fields
+    receptive_fields_path = os.path.join(computed_dir, 'receptive_fields', epoch_block_name, 'receptive_fields.npy')
+    if os.path.exists(receptive_fields_path):
+        receptive_fields = np.load(receptive_fields_path)
+        receptive_fields_view = ReceptiveFieldsView(
+            receptive_fields=receptive_fields
+        )
+        tab_items.append(vv.TabLayoutItem(
+            view=receptive_fields_view,
+            label="RFs"
+        ))
+    else:
+        tab_items.append(vv.TabLayoutItem(
+            view=vv.Markdown(content="Receptive fields not yet computed."),
+            label="RFs"
         ))
     
     # Combine into tab layout

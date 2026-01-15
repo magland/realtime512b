@@ -44,6 +44,7 @@ def run_start():
         process_reference_sorting,
         process_spike_sorting,
         process_epoch_block_spike_sorting,
+        process_receptive_fields,
         process_preview,
         process_epoch_block_preview
     )
@@ -160,8 +161,13 @@ def run_start():
                     something_processed = True
                     up_to_date_printed = False
                 
+                # Process receptive fields
+                if process_receptive_fields(raw_dir, computed_dir, acquisition_dir):
+                    something_processed = True
+                    up_to_date_printed = False
+                
                 # Process epoch block preview generation
-                if process_epoch_block_preview(raw_dir, computed_dir, n_channels, sampling_frequency, segment_duration_sec, electrode_coords):
+                if process_epoch_block_preview(raw_dir, computed_dir, acquisition_dir, n_channels, sampling_frequency, segment_duration_sec, electrode_coords):
                     something_processed = True
                     up_to_date_printed = False
                 

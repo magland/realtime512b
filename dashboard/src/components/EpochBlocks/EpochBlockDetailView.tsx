@@ -97,6 +97,12 @@ export function EpochBlockDetailView() {
                 />
                 <Chip
                   size="small"
+                  label="Receptive Fields"
+                  color={epochBlockData.has_receptive_fields ? 'success' : 'default'}
+                  icon={epochBlockData.has_receptive_fields ? <CheckCircleIcon /> : <ErrorIcon />}
+                />
+                <Chip
+                  size="small"
                   label="EpochBlock Preview"
                   color={epochBlockData.has_epoch_block_preview ? 'success' : 'default'}
                   icon={epochBlockData.has_epoch_block_preview ? <CheckCircleIcon /> : <ErrorIcon />}
@@ -135,6 +141,14 @@ export function EpochBlockDetailView() {
                 </Typography>
                 <Typography variant="h5">
                   {epochBlockData.has_epoch_block_sorting ? 'Yes' : 'No'}
+                </Typography>
+              </Grid>
+              <Grid item xs={12} sm={6} md={3}>
+                <Typography variant="body2" color="text.secondary">
+                  Receptive Fields
+                </Typography>
+                <Typography variant="h5">
+                  {epochBlockData.has_receptive_fields ? 'Yes' : 'No'}
                 </Typography>
               </Grid>
               <Grid item xs={12} sm={6} md={3}>

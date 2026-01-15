@@ -47,6 +47,10 @@ def get_epoch_blocks_handler():
             epoch_block_preview_dir = os.path.join(computed_dir, "epoch_block_preview", item, "epoch_block.figpack")
             has_epoch_block_preview = os.path.exists(epoch_block_preview_dir) and os.path.isdir(epoch_block_preview_dir)
             
+            # Check receptive fields
+            receptive_fields_path = os.path.join(computed_dir, "receptive_fields", item, "receptive_fields.npy")
+            has_receptive_fields = os.path.exists(receptive_fields_path)
+            
             # Count how many segments have spike sorting completed
             spike_sorting_dir = os.path.join(computed_dir, "spike_sorting", item)
             num_segments_sorted = 0
@@ -64,6 +68,7 @@ def get_epoch_blocks_handler():
                 "num_segments": num_segments,
                 "num_segments_sorted": num_segments_sorted,
                 "has_epoch_block_sorting": has_epoch_block_sorting,
+                "has_receptive_fields": has_receptive_fields,
                 "has_epoch_block_preview": has_epoch_block_preview
             })
     
@@ -310,6 +315,10 @@ def get_epoch_block_detail_handler(epoch_block_id):
     epoch_block_preview_dir = os.path.join(computed_dir, "epoch_block_preview", epoch_block_id, "epoch_block.figpack")
     has_epoch_block_preview = os.path.exists(epoch_block_preview_dir) and os.path.isdir(epoch_block_preview_dir)
     
+    # Check receptive fields
+    receptive_fields_path = os.path.join(computed_dir, "receptive_fields", epoch_block_id, "receptive_fields.npy")
+    has_receptive_fields = os.path.exists(receptive_fields_path)
+    
     # Get epoch block sorting statistics if available
     epoch_block_sorting_stats = None
     if has_epoch_block_sorting:
@@ -355,6 +364,7 @@ def get_epoch_block_detail_handler(epoch_block_id):
         "num_segments": num_segments,
         "num_segments_sorted": num_segments_sorted,
         "has_epoch_block_sorting": has_epoch_block_sorting,
+        "has_receptive_fields": has_receptive_fields,
         "has_epoch_block_preview": has_epoch_block_preview,
         "epoch_block_sorting_stats": epoch_block_sorting_stats,
         "segments": segment_files

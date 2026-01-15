@@ -5,6 +5,7 @@ from .MEAFiringRatesAndAmplitudes import MEAFiringRatesAndAmplitudes
 from .TemplatesView import TemplatesView
 from .ClusterSeparationView import ClusterSeparationView, ClusterSeparationViewItem
 from .MEASpikeFramesMovie import MEASpikeFramesMovie
+from .ReceptiveFieldsView import ReceptiveFieldsView
 
 __all__ = [
     'MEAMovie',
@@ -13,4 +14,5 @@ __all__ = [
     'ClusterSeparationView',
     'ClusterSeparationViewItem',
     'MEASpikeFramesMovie',
+    'ReceptiveFieldsView',
 ]

@@ -12,6 +12,7 @@ import {
 import FPMEAFiringRatesAndAmplitudes from "./views/MEAFiringRatesAndAmplitudes/FPMEAFiringRatesAndAmplitudes";
 import FPTemplatesView from "./views/TemplatesView/FPTemplatesView";
 import FPClusterSeparationView from "./views/ClusterSeparationView/FPClusterSeparationView";
+import FPReceptiveFieldsView from "./views/ReceptiveFieldsView/FPReceptiveFieldsView";
 
 // Declare global types for figpack extension system
 export {};
@@ -121,6 +122,11 @@ const registerExtension = () => {
   registerFPViewComponent({
     name: "realtime512b.ClusterSeparationView",
     render: makeRenderFunction(FPClusterSeparationView),
+  });
+
+  registerFPViewComponent({
+    name: "realtime512b.ReceptiveFieldsView",
+    render: makeRenderFunction(FPReceptiveFieldsView),
   });
 
   // Register extension

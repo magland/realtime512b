@@ -13,6 +13,7 @@ from ..helpers.channel_spike_stats import compute_channel_spike_stats
 from ..helpers.coarse_sorting import compute_coarse_sorting
 from ..helpers.spike_sorting import compute_spike_sorting
 from ..helpers.epoch_block_spike_sorting import compute_epoch_block_spike_sorting
+from ..helpers.receptive_fields import compute_receptive_fields
 from ..helpers.file_info import create_info_file
 from ..helpers.generate_preview import generate_preview, generate_epoch_block_preview
 
@@ -778,7 +779,81 @@ def process_epoch_block_spike_sorting(raw_dir, computed_dir, n_channels, segment
     return something_processed
 
 
-def process_epoch_block_preview(raw_dir, computed_dir, n_channels, sampling_frequency, segment_duration_sec, electrode_coords):
+def process_receptive_fields(raw_dir, computed_dir, acquisition_dir):
+    """
+    Compute receptive fields for epoch blocks with completed spike sorting.
+    Generates 5D receptive field arrays from spike data and acquisition files.
+    Returns True if any processing was done.
+    """
+    something_processed = False
+    
+    # Check if raw directory exists
+    if not os.path.exists(raw_dir):
+        return False
+    
+    # Check if epoch_block_spike_sorting directory exists
+    epoch_block_sorting_dir = os.path.join(computed_dir, 'epoch_block_spike_sorting')
+    if not os.path.exists(epoch_block_sorting_dir):
+        return False
+    
+    # Iterate through epoch blocks with completed spike sorting
+    for epoch_block_name in sorted(os.listdir(epoch_block_sorting_dir)):
+        epoch_block_sorting_path = os.path.join(epoch_block_sorting_dir, epoch_block_name)
+        if not os.path.isdir(epoch_block_sorting_path):
+            continue
+        
+        # Check if all required sorting files exist
+        required_files = ['spike_times.npy', 'spike_labels.npy']
+        all_exist = all(os.path.exists(os.path.join(epoch_block_sorting_path, f)) for f in required_files)
+        if not all_exist:
+            continue
+        
+        # Check if receptive fields already computed
+        receptive_fields_dir = os.path.join(computed_dir, 'receptive_fields', epoch_block_name)
+        receptive_fields_path = os.path.join(receptive_fields_dir, 'receptive_fields.npy')
+        
+        if os.path.exists(receptive_fields_path):
+            continue
+        
+        # Load spike data
+        spike_times = np.load(os.path.join(epoch_block_sorting_path, 'spike_times.npy'))
+        spike_labels = np.load(os.path.join(epoch_block_sorting_path, 'spike_labels.npy'))
+        
+        # Construct acquisition directory path for this epoch block
+        epoch_block_acquisition_dir = os.path.join(acquisition_dir, epoch_block_name)
+        
+        if not os.path.exists(epoch_block_acquisition_dir):
+            print(f"  Warning: Acquisition directory not found: {epoch_block_acquisition_dir}")
+            continue
+        
+        # Compute receptive fields
+        print(f"Computing receptive fields: {epoch_block_name}")
+        start_time = time.time()
+        
+        receptive_fields = compute_receptive_fields(
+            spike_times=spike_times,
+            spike_labels=spike_labels,
+            acquisition_dir=epoch_block_acquisition_dir
+        )
+        
+        elapsed_time = time.time() - start_time
+        
+        # Save receptive fields
+        os.makedirs(receptive_fields_dir, exist_ok=True)
+        np.save(receptive_fields_path, receptive_fields)
+        
+        # Create .info file
+        create_info_file(receptive_fields_path, elapsed_time)
+        
+        print(f"  Saved receptive fields with shape {receptive_fields.shape}")
+        print(f"Created receptive_fields: {epoch_block_name}/receptive_fields.npy")
+        something_processed = True
+        return True  # Process one at a time
+    
+    return something_processed
+
+
+def process_epoch_block_preview(raw_dir, computed_dir, acquisition_dir, n_channels, sampling_frequency, segment_duration_sec, electrode_coords):
     """
     Create epoch block preview figpacks based on epoch block spike sorting.
     Generates previews showing templates, autocorrelograms, cluster separation,
@@ -838,6 +913,7 @@ def process_epoch_block_preview(raw_dir, computed_dir, n_channels, sampling_freq
             epoch_block_name=epoch_block_name,
             epoch_block_sorting_path=epoch_block_sorting_path,
             computed_dir=computed_dir,
+            acquisition_dir=acquisition_dir,
             n_channels=n_channels,
             sampling_frequency=sampling_frequency,
             segment_duration_sec=segment_duration_sec,

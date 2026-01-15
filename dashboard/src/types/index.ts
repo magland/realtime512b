@@ -39,6 +39,7 @@ export interface EpochBlockInfo {
   num_segments: number;
   num_segments_sorted: number;
   has_epoch_block_sorting: boolean;
+  has_receptive_fields: boolean;
   has_epoch_block_preview: boolean;
 }
 
@@ -60,6 +61,7 @@ export interface EpochBlockDetailResponse {
   num_segments: number;
   num_segments_sorted: number;
   has_epoch_block_sorting: boolean;
+  has_receptive_fields: boolean;
   has_epoch_block_preview: boolean;
   epoch_block_sorting_stats: EpochBlockSortingStats | null;
   segments: string[];
