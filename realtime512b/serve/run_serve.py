@@ -36,7 +36,7 @@ def run_serve(host="0.0.0.0", port=5000):
     print(f"Starting realtime512b server...")
     print(f"Serving data from: {os.getcwd()}")
     print(f"Server will listen on http://{host}:{port}")
-    print(f"CORS enabled for: http://localhost:5173")
+    print(f"CORS enabled for: http://localhost:5173 and https://realtime512b-dashboard.vercel.app")
     print("")
     print("API Endpoints:")
     print("  GET /api/config - Configuration")
@@ -57,7 +57,7 @@ def run_serve(host="0.0.0.0", port=5000):
     app = Flask(__name__)
 
     # Enable CORS for localhost:5173 and expose custom headers
-    CORS(app, origins=["http://localhost:5173"], expose_headers=[
+    CORS(app, origins=["http://localhost:5173", "https://realtime512b-dashboard.vercel.app"], expose_headers=[
         "X-Start-Sec",
         "X-End-Sec", 
         "X-Num-Frames",

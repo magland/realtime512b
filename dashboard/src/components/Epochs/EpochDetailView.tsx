@@ -1,26 +1,25 @@
-import { useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import {
-  Box,
-  Card,
-  CardContent,
-  CircularProgress,
-  Typography,
-  Alert,
-  Stack,
-  Button,
-  Chip,
-  Divider,
-  Grid,
-  Paper,
-} from '@mui/material';
 import {
   ArrowBack as ArrowBackIcon,
   CheckCircle as CheckCircleIcon,
-  Schedule as ScheduleIcon,
-  OpenInNew as OpenInNewIcon,
   Cancel as ErrorIcon,
+  OpenInNew as OpenInNewIcon
 } from '@mui/icons-material';
+import {
+  Alert,
+  Box,
+  Button,
+  Card,
+  CardContent,
+  Chip,
+  CircularProgress,
+  Divider,
+  Grid,
+  Paper,
+  Stack,
+  Typography,
+} from '@mui/material';
+import { useCallback } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { usePolling } from '../../hooks/usePolling';
 import { api, getEpochPreviewUrl } from '../../services/api';
 import { navigateWithQuery } from '../../utils/navigation';

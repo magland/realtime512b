@@ -2,22 +2,10 @@
 
 Real-time processing of multi-electrode neural data.
 
-This is a restructured and reimplemented version of the realtime512 package.
-
 ## Installation
 
 ```bash
 pip install -e .
-```
-
-For bin2py support:
-```bash
-pip install -e ".[bin2py]"
-```
-
-For full support (including clustering):
-```bash
-pip install -e ".[full]"
 ```
 
 ## Usage
@@ -49,69 +37,30 @@ This will:
 3. Wait for a `reference_segment.txt` file
 4. Generate computed data (filtered, shifted, statistics, etc.)
 
-### Serve data via HTTP API (coming soon)
+### Serve data via HTTP API
 
 ```bash
+cd experiment1
 realtime512b serve
 ```
 
-## Directory Structure
+### Open the dashboard
 
-After initialization and processing, your experiment directory will contain:
+With the server running, open the dashboard in your web browser at
+[https://](https://realtime512b-dashboard.vercel.app/)
+
+You will be able to monitor the processing status and visualize data.
+
+### Specifying the reference segment
+
+After some initial processing runs, you will need to specify the reference segment by creating a `reference_segment.txt` file in the experiment directory. The file should contain one line with the text
 
 ```
-experiment1/
-├── realtime512b.yaml           # Configuration
-├── electrode_coords.txt        # Electrode coordinates (512 lines, x y per line)
-├── reference_segment.txt       # Reference segment path (e.g., epoch_001/segment_001.bin)
-├── acquisition/                # Input data organized by epochs
-│   └── epoch_001/              # Each epoch contains .bin files or bin2py folder
-├── raw/                        # Rechunked raw segments
-│   └── epoch_001/
-│       ├── segment_001.bin
-│       ├── segment_002.bin
-│       └── ...
-└── computed/                   # Computed data products
-    ├── shift_coeffs.yaml
-    ├── filt/                   # Filtered data
-    │   └── epoch_001/
-    │       ├── segment_001.bin.filt
-    │       └── ...
-    ├── shifted/                # Time-shifted data
-    │   └── epoch_001/
-    │       ├── segment_001.bin.shifted
-    │       └── ...
-    ├── stats/                  # Spike statistics
-    │   └── epoch_001/
-    │       ├── segment_001.bin.stats.json
-    │       └── ...
-    ├── high_activity/          # High activity intervals
-    │   └── epoch_001/
-    │       ├── segment_001.bin.high_activity.json
-    │       └── ...
-    └── reference_sorting/      # Spike sorting on reference segment
-        └── epoch_001/
-            └── segment_001.bin/
-                ├── spike_times.npy
-                ├── spike_labels.npy
-                ├── spike_amplitudes.npy
-                └── templates.npy
+epoch_name/segment_002.bin
 ```
 
-## Configuration
+where `epoch_name` is the name of the epoch containing the reference segment, and `segment_002.bin` is the filename of the segment to use as reference.
 
-The `realtime512b.yaml` file contains all processing parameters:
+You may want to use the second segment as the reference to avoid any startup artifacts in the first segment.
 
-```yaml
-coarse_sorting_detect_threshold: -80
-detect_threshold_for_spike_stats: -40
-filter_params:
-  highcut: 4000
-  lowcut: 300
-  order: 4
-high_activity_threshold: 3
-n_channels: 512
-raw_segment_duration_sec: 10.0
-sampling_frequency: 20000
-use_bin2py: true
-```
+The reference segment will be used for the reference spike sorting and other reference computations.

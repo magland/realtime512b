@@ -1,22 +1,21 @@
-import { useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
-import {
-  Box,
-  Card,
-  CardContent,
-  CircularProgress,
-  Typography,
-  Alert,
-  Stack,
-  Chip,
-  LinearProgress,
-  CardActionArea,
-} from '@mui/material';
 import {
   CheckCircle as CheckCircleIcon,
-  Schedule as ScheduleIcon,
-  Cancel as ErrorIcon,
+  Cancel as ErrorIcon
 } from '@mui/icons-material';
+import {
+  Alert,
+  Box,
+  Card,
+  CardActionArea,
+  CardContent,
+  Chip,
+  CircularProgress,
+  LinearProgress,
+  Stack,
+  Typography,
+} from '@mui/material';
+import { useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { usePolling } from '../../hooks/usePolling';
 import { api } from '../../services/api';
 import { navigateWithQuery } from '../../utils/navigation';
