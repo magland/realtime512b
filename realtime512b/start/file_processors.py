@@ -661,7 +661,7 @@ def process_epoch_block_spike_sorting(raw_dir, computed_dir, n_channels, segment
     Create epoch_block-level spike sorting by combining segment spike sortings.
     Pieces together spike times, labels, and amplitudes from all segments,
     and computes templates as weighted mean of segment templates.
-    Only processes epoch blockswhere all segments have completed spike sorting.
+    Only processes epoch blocks where all segments have completed spike sorting.
     Returns True if any processing was done.
     """
     something_processed = False
@@ -675,7 +675,7 @@ def process_epoch_block_spike_sorting(raw_dir, computed_dir, n_channels, segment
     if not os.path.exists(spike_sorting_dir):
         return False
     
-    # Iterate through epoch blocksin raw/ directory
+    # Iterate through epoch blocks in raw/ directory
     for epoch_block_name in sorted(os.listdir(raw_dir)):
         epoch_block_path = os.path.join(raw_dir, epoch_block_name)
         if not os.path.isdir(epoch_block_path):
@@ -796,7 +796,7 @@ def process_epoch_block_preview(raw_dir, computed_dir, n_channels, sampling_freq
     if not os.path.exists(epoch_block_sorting_dir):
         return False
     
-    # Iterate through epoch blockswith completed spike sorting
+    # Iterate through epoch blocks with completed spike sorting
     for epoch_block_name in sorted(os.listdir(epoch_block_sorting_dir)):
         epoch_block_sorting_path = os.path.join(epoch_block_sorting_dir, epoch_block_name)
         if not os.path.isdir(epoch_block_sorting_path):

@@ -51,17 +51,17 @@ export function EpochBlocksView() {
   return (
     <Box>
       <Typography variant="h4" gutterBottom>
-        EpochBlocks
+        Epoch Blocks
       </Typography>
 
       <Typography variant="body2" color="text.secondary" gutterBottom>
-        Overview of all epoch blocksand their spike sorting progress
+        Overview of all epoch blocks and their spike sorting progress
       </Typography>
 
       <Stack spacing={2} mt={3}>
         {epochBlocks.length === 0 ? (
           <Alert severity="info">
-            No epoch blocksfound. Data will appear here once processing begins.
+            No epoch blocks found. Data will appear here once processing begins.
           </Alert>
         ) : (
           epochBlocks.map((epochBlock) => {

@@ -1,4 +1,4 @@
-"""EpochBlock processor for converting acquisition epoch blocksinto raw segments."""
+"""EpochBlock processor for converting acquisition epoch blocks into raw segments."""
 
 import os
 import time
@@ -9,10 +9,10 @@ from ..helpers.file_info import create_info_file
 
 class EpochBlockProcessor:
     """
-    Processes acquisition epoch blocksand converts them into fixed-duration raw segments.
+    Processes acquisition epoch blocks and converts them into fixed-duration raw segments.
     
-    In bin2py mode, acquisition epoch blocksare bin2py folders.
-    In direct mode, acquisition epoch blockscontain .bin files.
+    In bin2py mode, acquisition epoch blocks are bin2py folders.
+    In direct mode, acquisition epoch blocks contain .bin files.
     """
     
     def __init__(self, acquisition_dir, raw_dir, n_channels, 
@@ -28,7 +28,7 @@ class EpochBlockProcessor:
     
     def process_epoch_blocks(self):
         """
-        Process any new valid epoch blocksfrom acquisition/ to raw/.
+        Process any new valid epoch blocks from acquisition/ to raw/.
         Returns True if any processing was done.
         """
         valid_epoch_blocks = self._get_valid_epoch_blocks()

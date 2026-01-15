@@ -4,8 +4,8 @@ Web-based dashboard for monitoring and visualizing realtime512b neural data proc
 
 ## Features
 
-- **Overview**: View experiment configuration, processing status across all epoch blocksand segments
-- **Segments Explorer**: Browse all segments across epoch blocksin a flat list with processing status indicators
+- **Overview**: View experiment configuration, processing status across all epoch blocks and segments
+- **Segments Explorer**: Browse all segments across epoch blocks in a flat list with processing status indicators
 - **Segment Details**: View detailed information, spike statistics, and high activity intervals for individual segments
 
 ## Architecture
@@ -72,7 +72,7 @@ Navigate to `http://localhost:5173` in your browser.
 - Displays shift coefficients and total duration
 
 **Segments**
-- Lists all segments across all epoch blocksin a flat view
+- Lists all segments across all epoch blocks in a flat view
 - Format: "epoch_block_001/segment_001.bin", "epoch_block_001/segment_002.bin", etc.
 - Shows processing status chips (Filtered, Shifted, Reference Sorting, High Activity, Statistics)
 - Click any segment to view details
@@ -115,5 +115,5 @@ This dashboard is adapted for realtime512b's epoch block-based organization:
 - No focus units feature (simplified)
 - No preview/figpack support
 - Uses "reference_sorting" instead of "coarse_sorting"
-- Flat segment listing across epoch blocksinstead of hierarchical navigation
+- Flat segment listing across epoch blocks instead of hierarchical navigation
 - Minimal stats display (tables and basic summaries, no complex visualizations)

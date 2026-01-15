@@ -33,7 +33,7 @@ realtime512b start
 
 This will:
 1. Monitor the `acquisition/` directory for new epoch blocks
-2. Process epoch blocksinto raw segments
+2. Process epoch blocks into raw segments
 3. Wait for a `reference_segment.txt` file
 4. Generate computed data (filtered, shifted, statistics, etc.)
 

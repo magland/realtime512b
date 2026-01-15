@@ -75,7 +75,7 @@ export function OverviewView() {
           });
           setAllSegments(combined);
           
-          // Count epoch blockswith completed sorting
+          // Count epoch blocks with completed sorting
           const epochBlocksWithCompleteSorting = epochBlocks.filter(e => e.has_epoch_block_sorting).length;
           setEpochBlocksWithSorting(epochBlocksWithCompleteSorting);
         }
