@@ -30,23 +30,23 @@ export interface SegmentInfo {
 }
 
 export interface SegmentsResponse {
-  epoch: string;
+  epochBlock: string;
   segments: SegmentInfo[];
 }
 
-export interface EpochInfo {
+export interface EpochBlockInfo {
   name: string;
   num_segments: number;
   num_segments_sorted: number;
-  has_epoch_sorting: boolean;
-  has_epoch_preview: boolean;
+  has_epoch_block_sorting: boolean;
+  has_epoch_block_preview: boolean;
 }
 
-export interface EpochsResponse {
-  epochs: EpochInfo[];
+export interface EpochBlocksResponse {
+  epochBlocks: EpochBlockInfo[];
 }
 
-export interface EpochSortingStats {
+export interface EpochBlockSortingStats {
   num_spikes: number;
   num_units: number;
   num_templates: number;
@@ -55,13 +55,13 @@ export interface EpochSortingStats {
   max_time_sec: number | null;
 }
 
-export interface EpochDetailResponse {
-  epoch: string;
+export interface EpochBlockDetailResponse {
+  epochBlock: string;
   num_segments: number;
   num_segments_sorted: number;
-  has_epoch_sorting: boolean;
-  has_epoch_preview: boolean;
-  epoch_sorting_stats: EpochSortingStats | null;
+  has_epoch_block_sorting: boolean;
+  has_epoch_block_preview: boolean;
+  epoch_block_sorting_stats: EpochBlockSortingStats | null;
   segments: string[];
 }
 
@@ -95,7 +95,7 @@ export interface BinaryDataResponse {
 
 export type DataType = 'raw' | 'filt' | 'shifted';
 
-// Combined segment info with epoch
-export interface SegmentWithEpoch extends SegmentInfo {
-  epoch: string;
+// Combined segment info with epochBlock
+export interface SegmentWithEpochBlock extends SegmentInfo {
+  epochBlock: string;
 }

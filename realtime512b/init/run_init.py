@@ -114,7 +114,7 @@ def run_init():
     print("=" * 60)
     print()
     print("Next steps:")
-    print("1. Copy your acquisition data into acquisition/epoch_XXX/ directories")
+    print("1. Copy your acquisition data into acquisition/epoch_block_XXX/ directories")
     print("2. Run 'realtime512b start' to begin processing")
     print()
 

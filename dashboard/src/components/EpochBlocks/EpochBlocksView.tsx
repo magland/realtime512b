@@ -20,17 +20,17 @@ import { usePolling } from '../../hooks/usePolling';
 import { api } from '../../services/api';
 import { navigateWithQuery } from '../../utils/navigation';
 
-export function EpochsView() {
-  const fetchEpochs = useCallback(() => api.getEpochs(), []);
+export function EpochBlocksView() {
+  const fetchEpochBlocks = useCallback(() => api.getEpochBlocks(), []);
   const navigate = useNavigate();
 
   const {
-    data: epochsData,
-    error: epochsError,
-    isLoading: epochsLoading,
-  } = usePolling(fetchEpochs, { interval: 5000 });
+    data: epochBlocksData,
+    error: epochBlocksError,
+    isLoading: epochBlocksLoading,
+  } = usePolling(fetchEpochBlocks, { interval: 5000 });
 
-  if (epochsLoading) {
+  if (epochBlocksLoading) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="60vh">
         <CircularProgress />
@@ -38,53 +38,53 @@ export function EpochsView() {
     );
   }
 
-  if (epochsError) {
+  if (epochBlocksError) {
     return (
       <Alert severity="error">
-        Error loading epochs: {epochsError.message}
+        Error loading epochBlocks: {epochBlocksError.message}
       </Alert>
     );
   }
 
-  const epochs = epochsData?.epochs || [];
+  const epochBlocks = epochBlocksData?.epochBlocks || [];
 
   return (
     <Box>
       <Typography variant="h4" gutterBottom>
-        Epochs
+        EpochBlocks
       </Typography>
 
       <Typography variant="body2" color="text.secondary" gutterBottom>
-        Overview of all epochs and their spike sorting progress
+        Overview of all epoch blocksand their spike sorting progress
       </Typography>
 
       <Stack spacing={2} mt={3}>
-        {epochs.length === 0 ? (
+        {epochBlocks.length === 0 ? (
           <Alert severity="info">
-            No epochs found. Data will appear here once processing begins.
+            No epoch blocksfound. Data will appear here once processing begins.
           </Alert>
         ) : (
-          epochs.map((epoch) => {
-            const progress = epoch.num_segments > 0 
-              ? (epoch.num_segments_sorted / epoch.num_segments) * 100 
+          epochBlocks.map((epochBlock) => {
+            const progress = epochBlock.num_segments > 0 
+              ? (epochBlock.num_segments_sorted / epochBlock.num_segments) * 100 
               : 0;
-            const isComplete = epoch.has_epoch_sorting;
+            const isComplete = epochBlock.has_epoch_block_sorting;
 
             return (
-              <Card key={epoch.name}>
-                <CardActionArea onClick={() => navigate(navigateWithQuery(`/epochs/${epoch.name}`))}>
+              <Card key={epochBlock.name}>
+                <CardActionArea onClick={() => navigate(navigateWithQuery(`/epochBlocks/${epochBlock.name}`))}>
                   <CardContent>
                     <Box display="flex" justifyContent="space-between" alignItems="center">
                       <Box>
                         <Typography variant="h6" gutterBottom>
-                          {epoch.name}
+                          {epochBlock.name}
                         </Typography>
                         <Stack direction="row" spacing={2} alignItems="center">
                           <Typography variant="body2" color="text.secondary">
-                            <strong>Segments:</strong> {epoch.num_segments}
+                            <strong>Segments:</strong> {epochBlock.num_segments}
                           </Typography>
                           <Typography variant="body2" color="text.secondary">
-                            <strong>Sorted:</strong> {epoch.num_segments_sorted} / {epoch.num_segments}
+                            <strong>Sorted:</strong> {epochBlock.num_segments_sorted} / {epochBlock.num_segments}
                           </Typography>
                         </Stack>
                       </Box>
@@ -96,15 +96,15 @@ export function EpochsView() {
                         <Stack direction="row" spacing={1} flexWrap="wrap">
                           <Chip
                             size="small"
-                            label="Epoch Sorting"
+                            label="EpochBlock Sorting"
                             color={isComplete ? 'success' : 'default'}
                             icon={isComplete ? <CheckCircleIcon /> : <ErrorIcon />}
                           />
                           <Chip
                             size="small"
-                            label="Epoch Preview"
-                            color={epoch.has_epoch_preview ? 'success' : 'default'}
-                            icon={epoch.has_epoch_preview ? <CheckCircleIcon /> : <ErrorIcon />}
+                            label="EpochBlock Preview"
+                            color={epochBlock.has_epoch_block_preview ? 'success' : 'default'}
+                            icon={epochBlock.has_epoch_block_preview ? <CheckCircleIcon /> : <ErrorIcon />}
                           />
                         </Stack>
                       </Box>

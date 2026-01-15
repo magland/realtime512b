@@ -1,15 +1,15 @@
-"""Helper function for combining segment spike sortings into epoch spike sorting."""
+"""Helper function for combining segment spike sortings into epoch block spike sorting."""
 
 import numpy as np
 
 
-def compute_epoch_spike_sorting(
+def compute_epoch_block_spike_sorting(
     segment_sortings,
     segment_duration_sec,
     num_channels
 ):
     """
-    Combine spike sortings from multiple segments into an epoch-level sorting.
+    Combine spike sortings from multiple segments into an epoch block-level sorting.
     
     Parameters
     ----------

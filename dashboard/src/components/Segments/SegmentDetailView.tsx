@@ -29,23 +29,23 @@ import { api, getPreviewUrl } from '../../services/api';
 import { navigateWithQuery } from '../../utils/navigation';
 
 export function SegmentDetailView() {
-  const { epochId, filename } = useParams<{ epochId: string; filename: string }>();
+  const { epochBlockId, filename } = useParams<{ epochBlockId: string; filename: string }>();
   const navigate = useNavigate();
 
   const fetchSegments = useCallback(() => {
-    if (!epochId) return Promise.reject(new Error('No epoch ID'));
-    return api.getSegments(epochId);
-  }, [epochId]);
+    if (!epochBlockId) return Promise.reject(new Error('No epoch ID'));
+    return api.getSegments(epochBlockId);
+  }, [epochBlockId]);
 
   const fetchStats = useCallback(() => {
-    if (!epochId || !filename) return Promise.reject(new Error('Missing parameters'));
-    return api.getStats(epochId, filename);
-  }, [epochId, filename]);
+    if (!epochBlockId || !filename) return Promise.reject(new Error('Missing parameters'));
+    return api.getStats(epochBlockId, filename);
+  }, [epochBlockId, filename]);
 
   const fetchHighActivity = useCallback(() => {
-    if (!epochId || !filename) return Promise.reject(new Error('Missing parameters'));
-    return api.getHighActivity(epochId, filename);
-  }, [epochId, filename]);
+    if (!epochBlockId || !filename) return Promise.reject(new Error('Missing parameters'));
+    return api.getHighActivity(epochBlockId, filename);
+  }, [epochBlockId, filename]);
 
   const {
     data: segmentsData,
@@ -84,7 +84,7 @@ export function SegmentDetailView() {
   if (!segment) {
     return (
       <Alert severity="error">
-        Segment not found: {epochId}/{filename}
+        Segment not found: {epochBlockId}/{filename}
       </Alert>
     );
   }
@@ -99,7 +99,7 @@ export function SegmentDetailView() {
           Back to Segments
         </Button>
         <Typography variant="h4">
-          {epochId}/{filename}
+          {epochBlockId}/{filename}
         </Typography>
       </Box>
 
@@ -250,21 +250,21 @@ export function SegmentDetailView() {
               <Typography variant="h6">
                 Preview
               </Typography>
-              {segment.has_preview && epochId && (
+              {segment.has_preview && epochBlockId && (
                 <Button
                   variant="outlined"
                   size="small"
                   startIcon={<OpenInNewIcon />}
-                  onClick={() => window.open(getPreviewUrl(epochId, segment.filename), '_blank')}
+                  onClick={() => window.open(getPreviewUrl(epochBlockId, segment.filename), '_blank')}
                 >
                   Open in New Tab
                 </Button>
               )}
             </Box>
-            {segment.has_preview && epochId ? (
+            {segment.has_preview && epochBlockId ? (
               <Paper sx={{ p: 0, height: 'calc(100vh - 400px)', minHeight: '600px' }}>
                 <iframe
-                  src={getPreviewUrl(epochId, segment.filename)}
+                  src={getPreviewUrl(epochBlockId, segment.filename)}
                   style={{
                     width: '100%',
                     height: '100%',

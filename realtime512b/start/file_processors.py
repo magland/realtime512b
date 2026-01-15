@@ -12,9 +12,9 @@ from ..helpers.high_activity_intervals import detect_high_activity_intervals
 from ..helpers.channel_spike_stats import compute_channel_spike_stats
 from ..helpers.coarse_sorting import compute_coarse_sorting
 from ..helpers.spike_sorting import compute_spike_sorting
-from ..helpers.epoch_spike_sorting import compute_epoch_spike_sorting
+from ..helpers.epoch_block_spike_sorting import compute_epoch_block_spike_sorting
 from ..helpers.file_info import create_info_file
-from ..helpers.generate_preview import generate_preview, generate_epoch_preview
+from ..helpers.generate_preview import generate_preview, generate_epoch_block_preview
 
 
 def get_reference_segment():
@@ -36,12 +36,12 @@ def get_reference_segment():
     return content
 
 
-def is_reference_segment(epoch_name, segment_name, reference_segment):
+def is_reference_segment(epoch_block_name, segment_name, reference_segment):
     """Check if this segment is the reference segment."""
     if reference_segment is None:
         return False
     
-    segment_path = f"{epoch_name}/{segment_name}"
+    segment_path = f"{epoch_block_name}/{segment_name}"
     return segment_path == reference_segment
 
 
@@ -57,17 +57,17 @@ def process_filtering(raw_dir, computed_dir, n_channels, filter_params, sampling
     if not os.path.exists(raw_dir):
         return False
     
-    for epoch_name in sorted(os.listdir(raw_dir)):
-        epoch_path = os.path.join(raw_dir, epoch_name)
-        if not os.path.isdir(epoch_path):
+    for epoch_block_name in sorted(os.listdir(raw_dir)):
+        epoch_block_path = os.path.join(raw_dir, epoch_block_name)
+        if not os.path.isdir(epoch_block_path):
             continue
         
-        for segment_name in sorted(os.listdir(epoch_path)):
+        for segment_name in sorted(os.listdir(epoch_block_path)):
             if not segment_name.endswith('.bin'):
                 continue
             
             # Check if filtered version exists
-            filt_dir = os.path.join(computed_dir, 'filt', epoch_name)
+            filt_dir = os.path.join(computed_dir, 'filt', epoch_block_name)
             filt_path = os.path.join(filt_dir, f"{segment_name}.filt")
             
             if os.path.exists(filt_path):
@@ -76,10 +76,10 @@ def process_filtering(raw_dir, computed_dir, n_channels, filter_params, sampling
             # Create filtered version
             os.makedirs(filt_dir, exist_ok=True)
             
-            raw_path = os.path.join(epoch_path, segment_name)
+            raw_path = os.path.join(epoch_block_path, segment_name)
             
             # Apply bandpass filter with timing
-            print(f"Filtering {epoch_name}/{segment_name}...")
+            print(f"Filtering {epoch_block_name}/{segment_name}...")
             start_time = time.time()
             apply_bandpass_filter(
                 input_path=raw_path,
@@ -95,7 +95,7 @@ def process_filtering(raw_dir, computed_dir, n_channels, filter_params, sampling
             # Create .info file
             create_info_file(filt_path, elapsed_time)
             
-            print(f"Created filtered: {epoch_name}/{segment_name}.filt")
+            print(f"Created filtered: {epoch_block_name}/{segment_name}.filt")
             something_processed = True
             return True  # Process one at a time
     
@@ -167,17 +167,17 @@ def process_shifting(computed_dir, n_channels, electrode_coords, sampling_freque
     if not os.path.exists(filt_dir):
         return False
     
-    for epoch_name in sorted(os.listdir(filt_dir)):
-        epoch_path = os.path.join(filt_dir, epoch_name)
-        if not os.path.isdir(epoch_path):
+    for epoch_block_name in sorted(os.listdir(filt_dir)):
+        epoch_block_path = os.path.join(filt_dir, epoch_block_name)
+        if not os.path.isdir(epoch_block_path):
             continue
         
-        for filt_name in sorted(os.listdir(epoch_path)):
+        for filt_name in sorted(os.listdir(epoch_block_path)):
             if not filt_name.endswith('.filt'):
                 continue
             
             # Check if shifted version exists
-            shifted_dir = os.path.join(computed_dir, 'shifted', epoch_name)
+            shifted_dir = os.path.join(computed_dir, 'shifted', epoch_block_name)
             shifted_path = os.path.join(shifted_dir, f"{filt_name}.shifted")
             
             if os.path.exists(shifted_path):
@@ -186,11 +186,11 @@ def process_shifting(computed_dir, n_channels, electrode_coords, sampling_freque
             # Create shifted version
             os.makedirs(shifted_dir, exist_ok=True)
             
-            filt_path = os.path.join(epoch_path, filt_name)
+            filt_path = os.path.join(epoch_block_path, filt_name)
             
             # Apply time shifts with timing
             segment_name = filt_name.replace('.filt', '')
-            print(f"Applying time shifts to {epoch_name}/{segment_name}...")
+            print(f"Applying time shifts to {epoch_block_name}/{segment_name}...")
             start_time = time.time()
             filt_data = np.fromfile(filt_path, dtype=np.int16).reshape(-1, n_channels)
             shifted_data = apply_time_shifts(
@@ -206,7 +206,7 @@ def process_shifting(computed_dir, n_channels, electrode_coords, sampling_freque
             # Create .info file
             create_info_file(shifted_path, elapsed_time)
             
-            print(f"Created shifted: {epoch_name}/{segment_name}.shifted")
+            print(f"Created shifted: {epoch_block_name}/{segment_name}.shifted")
             something_processed = True
             return True  # Process one at a time
     
@@ -225,17 +225,17 @@ def process_stats(computed_dir, n_channels, sampling_frequency, detect_threshold
     if not os.path.exists(filt_dir):
         return False
     
-    for epoch_name in sorted(os.listdir(filt_dir)):
-        epoch_path = os.path.join(filt_dir, epoch_name)
-        if not os.path.isdir(epoch_path):
+    for epoch_block_name in sorted(os.listdir(filt_dir)):
+        epoch_block_path = os.path.join(filt_dir, epoch_block_name)
+        if not os.path.isdir(epoch_block_path):
             continue
         
-        for filt_name in sorted(os.listdir(epoch_path)):
+        for filt_name in sorted(os.listdir(epoch_block_path)):
             if not filt_name.endswith('.filt'):
                 continue
             
             # Check if stats file exists
-            stats_dir = os.path.join(computed_dir, 'stats', epoch_name)
+            stats_dir = os.path.join(computed_dir, 'stats', epoch_block_name)
             stats_name = filt_name.replace('.filt', '.stats.json')
             stats_path = os.path.join(stats_dir, stats_name)
             
@@ -245,10 +245,10 @@ def process_stats(computed_dir, n_channels, sampling_frequency, detect_threshold
             # Create stats file
             os.makedirs(stats_dir, exist_ok=True)
             
-            filt_path = os.path.join(epoch_path, filt_name)
+            filt_path = os.path.join(epoch_block_path, filt_name)
             segment_name = filt_name.replace('.bin.filt', '')
             
-            print(f"Computing channel spike stats: {epoch_name}/{segment_name}.stats.json")
+            print(f"Computing channel spike stats: {epoch_block_name}/{segment_name}.stats.json")
             start_time = time.time()
             filt_data = np.fromfile(filt_path, dtype=np.int16).reshape(-1, n_channels)
             mean_firing_rates, mean_spike_amplitudes = compute_channel_spike_stats(
@@ -269,7 +269,7 @@ def process_stats(computed_dir, n_channels, sampling_frequency, detect_threshold
             # Create .info file
             create_info_file(stats_path, elapsed_time)
             
-            print(f"Created stats: {epoch_name}/{segment_name}.stats.json")
+            print(f"Created stats: {epoch_block_name}/{segment_name}.stats.json")
             something_processed = True
             return True  # Process one at a time
     
@@ -288,17 +288,17 @@ def process_high_activity(computed_dir, n_channels, sampling_frequency, high_act
     if not os.path.exists(filt_dir):
         return False
     
-    for epoch_name in sorted(os.listdir(filt_dir)):
-        epoch_path = os.path.join(filt_dir, epoch_name)
-        if not os.path.isdir(epoch_path):
+    for epoch_block_name in sorted(os.listdir(filt_dir)):
+        epoch_block_path = os.path.join(filt_dir, epoch_block_name)
+        if not os.path.isdir(epoch_block_path):
             continue
         
-        for filt_name in sorted(os.listdir(epoch_path)):
+        for filt_name in sorted(os.listdir(epoch_block_path)):
             if not filt_name.endswith('.filt'):
                 continue
             
             # Check if high_activity file exists
-            ha_dir = os.path.join(computed_dir, 'high_activity', epoch_name)
+            ha_dir = os.path.join(computed_dir, 'high_activity', epoch_block_name)
             ha_name = filt_name.replace('.filt', '.high_activity.json')
             ha_path = os.path.join(ha_dir, ha_name)
             
@@ -308,10 +308,10 @@ def process_high_activity(computed_dir, n_channels, sampling_frequency, high_act
             # Create high_activity file
             os.makedirs(ha_dir, exist_ok=True)
             
-            filt_path = os.path.join(epoch_path, filt_name)
+            filt_path = os.path.join(epoch_block_path, filt_name)
             segment_name = filt_name.replace('.bin.filt', '')
             
-            print(f"Computing high activity intervals: {epoch_name}/{segment_name}.high_activity.json")
+            print(f"Computing high activity intervals: {epoch_block_name}/{segment_name}.high_activity.json")
             start_time = time.time()
             num_frames = os.path.getsize(filt_path) // (2 * n_channels)
             high_activity_intervals = detect_high_activity_intervals(
@@ -342,7 +342,7 @@ def process_high_activity(computed_dir, n_channels, sampling_frequency, high_act
             # Create .info file
             create_info_file(ha_path, elapsed_time)
             
-            print(f"Created high_activity: {epoch_name}/{segment_name}.high_activity.json")
+            print(f"Created high_activity: {epoch_block_name}/{segment_name}.high_activity.json")
             something_processed = True
             return True  # Process one at a time
     
@@ -466,12 +466,12 @@ def process_spike_sorting(computed_dir, reference_segment, n_channels, sampling_
     if not os.path.exists(shifted_dir):
         return False
     
-    for epoch_name in sorted(os.listdir(shifted_dir)):
-        epoch_path = os.path.join(shifted_dir, epoch_name)
-        if not os.path.isdir(epoch_path):
+    for epoch_block_name in sorted(os.listdir(shifted_dir)):
+        epoch_block_path = os.path.join(shifted_dir, epoch_block_name)
+        if not os.path.isdir(epoch_block_path):
             continue
         
-        for shifted_name in sorted(os.listdir(epoch_path)):
+        for shifted_name in sorted(os.listdir(epoch_block_path)):
             if not shifted_name.endswith('.shifted'):
                 continue
             
@@ -479,7 +479,7 @@ def process_spike_sorting(computed_dir, reference_segment, n_channels, sampling_
             segment_name = shifted_name.replace('.filt.shifted', '')
             
             # Check if spike sorting already exists
-            sorting_dir = os.path.join(computed_dir, 'spike_sorting', epoch_name, segment_name)
+            sorting_dir = os.path.join(computed_dir, 'spike_sorting', epoch_block_name, segment_name)
             
             if os.path.exists(sorting_dir):
                 # Check if all files exist
@@ -490,7 +490,7 @@ def process_spike_sorting(computed_dir, reference_segment, n_channels, sampling_
                     continue
             
             # Check if high activity file exists
-            high_activity_path = os.path.join(computed_dir, 'high_activity', epoch_name, segment_name + '.high_activity.json')
+            high_activity_path = os.path.join(computed_dir, 'high_activity', epoch_block_name, segment_name + '.high_activity.json')
             if not os.path.exists(high_activity_path):
                 continue
             
@@ -498,8 +498,8 @@ def process_spike_sorting(computed_dir, reference_segment, n_channels, sampling_
             os.makedirs(sorting_dir, exist_ok=True)
             
             # Load shifted data
-            shifted_path = os.path.join(epoch_path, shifted_name)
-            print(f"Computing spike sorting: {epoch_name}/{segment_name}")
+            shifted_path = os.path.join(epoch_block_path, shifted_name)
+            print(f"Computing spike sorting: {epoch_block_name}/{segment_name}")
             start_time = time.time()
             shifted_data = np.fromfile(shifted_path, dtype=np.int16).reshape(-1, n_channels)
             
@@ -537,7 +537,7 @@ def process_spike_sorting(computed_dir, reference_segment, n_channels, sampling_
             create_info_file(sorting_dir.rstrip('/') + '.bin', elapsed_time)
             
             print(f"  Saved {len(spike_times)} spikes with {len(templates)} templates")
-            print(f"Created spike_sorting: {epoch_name}/{segment_name}")
+            print(f"Created spike_sorting: {epoch_block_name}/{segment_name}")
             something_processed = True
             return True  # Process one at a time
     
@@ -557,12 +557,12 @@ def process_preview(computed_dir, reference_segment, n_channels, sampling_freque
     if not os.path.exists(filt_dir):
         return False
     
-    for epoch_name in sorted(os.listdir(filt_dir)):
-        epoch_path = os.path.join(filt_dir, epoch_name)
-        if not os.path.isdir(epoch_path):
+    for epoch_block_name in sorted(os.listdir(filt_dir)):
+        epoch_block_path = os.path.join(filt_dir, epoch_block_name)
+        if not os.path.isdir(epoch_block_path):
             continue
         
-        for filt_name in sorted(os.listdir(epoch_path)):
+        for filt_name in sorted(os.listdir(epoch_block_path)):
             if not filt_name.endswith('.filt'):
                 continue
             
@@ -570,7 +570,7 @@ def process_preview(computed_dir, reference_segment, n_channels, sampling_freque
             segment_name = filt_name.replace('.bin.filt', '.bin')
             
             # Check if preview exists
-            preview_dir = os.path.join(computed_dir, 'preview', epoch_name)
+            preview_dir = os.path.join(computed_dir, 'preview', epoch_block_name)
             preview_name = segment_name + '.figpack'
             preview_path = os.path.join(preview_dir, preview_name)
             
@@ -578,10 +578,10 @@ def process_preview(computed_dir, reference_segment, n_channels, sampling_freque
                 continue
             
             # Check dependencies
-            filt_path = os.path.join(epoch_path, filt_name)
-            shifted_path = os.path.join(computed_dir, 'shifted', epoch_name, filt_name + '.shifted')
-            stats_path = os.path.join(computed_dir, 'stats', epoch_name, segment_name + '.stats.json')
-            high_activity_path = os.path.join(computed_dir, 'high_activity', epoch_name, segment_name + '.high_activity.json')
+            filt_path = os.path.join(epoch_block_path, filt_name)
+            shifted_path = os.path.join(computed_dir, 'shifted', epoch_block_name, filt_name + '.shifted')
+            stats_path = os.path.join(computed_dir, 'stats', epoch_block_name, segment_name + '.stats.json')
+            high_activity_path = os.path.join(computed_dir, 'high_activity', epoch_block_name, segment_name + '.high_activity.json')
             
             if not os.path.exists(filt_path):
                 continue
@@ -595,7 +595,7 @@ def process_preview(computed_dir, reference_segment, n_channels, sampling_freque
             # Check if this is the reference segment
             reference_sorting_path = None
             spike_sorting_path = None
-            segment_path = f"{epoch_name}/{segment_name}"
+            segment_path = f"{epoch_block_name}/{segment_name}"
             
             if reference_segment == segment_path:
                 # This is the reference segment - check for sorting data
@@ -628,10 +628,10 @@ def process_preview(computed_dir, reference_segment, n_channels, sampling_freque
             os.makedirs(preview_dir, exist_ok=True)
             
             # Generate preview
-            print(f"Generating preview figpack: {epoch_name}/{segment_name}.figpack")
+            print(f"Generating preview figpack: {epoch_block_name}/{segment_name}.figpack")
             start_time = time.time()
             generate_preview(
-                epoch_name=epoch_name,
+                epoch_block_name=epoch_block_name,
                 segment_name=segment_name,
                 filt_path=filt_path,
                 shift_path=shifted_path,
@@ -649,19 +649,19 @@ def process_preview(computed_dir, reference_segment, n_channels, sampling_freque
             # Create .info file for the preview directory (corresponds to the segment .bin file)
             create_info_file(os.path.join(preview_dir, segment_name), elapsed_time)
             
-            print(f"Created preview: {epoch_name}/{segment_name}.figpack")
+            print(f"Created preview: {epoch_block_name}/{segment_name}.figpack")
             something_processed = True
             return True  # Process one at a time
     
     return something_processed
 
 
-def process_epoch_spike_sorting(raw_dir, computed_dir, n_channels, segment_duration_sec):
+def process_epoch_block_spike_sorting(raw_dir, computed_dir, n_channels, segment_duration_sec):
     """
-    Create epoch-level spike sorting by combining segment spike sortings.
+    Create epoch_block-level spike sorting by combining segment spike sortings.
     Pieces together spike times, labels, and amplitudes from all segments,
     and computes templates as weighted mean of segment templates.
-    Only processes epochs where all segments have completed spike sorting.
+    Only processes epoch blockswhere all segments have completed spike sorting.
     Returns True if any processing was done.
     """
     something_processed = False
@@ -675,26 +675,26 @@ def process_epoch_spike_sorting(raw_dir, computed_dir, n_channels, segment_durat
     if not os.path.exists(spike_sorting_dir):
         return False
     
-    # Iterate through epochs in raw/ directory
-    for epoch_name in sorted(os.listdir(raw_dir)):
-        epoch_path = os.path.join(raw_dir, epoch_name)
-        if not os.path.isdir(epoch_path):
+    # Iterate through epoch blocksin raw/ directory
+    for epoch_block_name in sorted(os.listdir(raw_dir)):
+        epoch_block_path = os.path.join(raw_dir, epoch_block_name)
+        if not os.path.isdir(epoch_block_path):
             continue
         
-        # Check if epoch spike sorting already exists
-        epoch_sorting_dir = os.path.join(computed_dir, 'epoch_spike_sorting', epoch_name)
+        # Check if epoch block spike sorting already exists
+        epoch_block_sorting_dir = os.path.join(computed_dir, 'epoch_block_spike_sorting', epoch_block_name)
         
-        if os.path.exists(epoch_sorting_dir):
+        if os.path.exists(epoch_block_sorting_dir):
             # Check if all files exist
             required_files = ['spike_times.npy', 'spike_labels.npy',
                              'spike_amplitudes.npy', 'templates.npy']
-            all_exist = all(os.path.exists(os.path.join(epoch_sorting_dir, f)) for f in required_files)
+            all_exist = all(os.path.exists(os.path.join(epoch_block_sorting_dir, f)) for f in required_files)
             if all_exist:
                 continue
         
-        # Get all segments in this epoch
+        # Get all segments in this epoch_block
         segment_files = sorted([
-            f for f in os.listdir(epoch_path)
+            f for f in os.listdir(epoch_block_path)
             if f.endswith('.bin')
         ])
         
@@ -707,7 +707,7 @@ def process_epoch_spike_sorting(raw_dir, computed_dir, n_channels, segment_durat
         
         for segment_file in segment_files:
             segment_name = segment_file  # e.g., "segment_001.bin"
-            segment_sorting_path = os.path.join(spike_sorting_dir, epoch_name, segment_name)
+            segment_sorting_path = os.path.join(spike_sorting_dir, epoch_block_name, segment_name)
             
             # Check if sorting exists for this segment
             required_files = ['spike_times.npy', 'spike_labels.npy',
@@ -742,11 +742,11 @@ def process_epoch_spike_sorting(raw_dir, computed_dir, n_channels, segment_durat
         if not all_segments_ready:
             continue
         
-        # All segments ready - compute epoch spike sorting
-        print(f"Computing epoch spike sorting: {epoch_name}")
+        # All segments ready - compute epoch block spike sorting
+        print(f"Computing epoch block spike sorting: {epoch_block_name}")
         start_time = time.time()
         
-        templates, spike_times, spike_labels, spike_amplitudes = compute_epoch_spike_sorting(
+        templates, spike_times, spike_labels, spike_amplitudes = compute_epoch_block_spike_sorting(
             segment_sortings=segment_sortings,
             segment_duration_sec=segment_duration_sec,
             num_channels=n_channels
@@ -755,12 +755,12 @@ def process_epoch_spike_sorting(raw_dir, computed_dir, n_channels, segment_durat
         elapsed_time = time.time() - start_time
         
         # Save outputs
-        os.makedirs(epoch_sorting_dir, exist_ok=True)
+        os.makedirs(epoch_block_sorting_dir, exist_ok=True)
         
-        templates_path = os.path.join(epoch_sorting_dir, 'templates.npy')
-        spike_times_path = os.path.join(epoch_sorting_dir, 'spike_times.npy')
-        spike_labels_path = os.path.join(epoch_sorting_dir, 'spike_labels.npy')
-        spike_amplitudes_path = os.path.join(epoch_sorting_dir, 'spike_amplitudes.npy')
+        templates_path = os.path.join(epoch_block_sorting_dir, 'templates.npy')
+        spike_times_path = os.path.join(epoch_block_sorting_dir, 'spike_times.npy')
+        spike_labels_path = os.path.join(epoch_block_sorting_dir, 'spike_labels.npy')
+        spike_amplitudes_path = os.path.join(epoch_block_sorting_dir, 'spike_amplitudes.npy')
         
         np.save(templates_path, templates)
         np.save(spike_times_path, spike_times)
@@ -768,19 +768,19 @@ def process_epoch_spike_sorting(raw_dir, computed_dir, n_channels, segment_durat
         np.save(spike_amplitudes_path, spike_amplitudes)
         
         # Create .info file
-        create_info_file(epoch_sorting_dir.rstrip('/') + '.bin', elapsed_time)
+        create_info_file(epoch_block_sorting_dir.rstrip('/') + '.bin', elapsed_time)
         
         print(f"  Saved {len(spike_times)} spikes with {len(templates)} templates")
-        print(f"Created epoch_spike_sorting: {epoch_name}")
+        print(f"Created epoch_block_spike_sorting: {epoch_block_name}")
         something_processed = True
         return True  # Process one at a time
     
     return something_processed
 
 
-def process_epoch_preview(raw_dir, computed_dir, n_channels, sampling_frequency, segment_duration_sec, electrode_coords):
+def process_epoch_block_preview(raw_dir, computed_dir, n_channels, sampling_frequency, segment_duration_sec, electrode_coords):
     """
-    Create epoch preview figpacks based on epoch spike sorting.
+    Create epoch block preview figpacks based on epoch block spike sorting.
     Generates previews showing templates, autocorrelograms, cluster separation,
     and time-binned firing rates across segments.
     Returns True if any processing was done.
@@ -791,52 +791,52 @@ def process_epoch_preview(raw_dir, computed_dir, n_channels, sampling_frequency,
     if not os.path.exists(raw_dir):
         return False
     
-    # Check if epoch_spike_sorting directory exists
-    epoch_sorting_dir = os.path.join(computed_dir, 'epoch_spike_sorting')
-    if not os.path.exists(epoch_sorting_dir):
+    # Check if epoch_block_spike_sorting directory exists
+    epoch_block_sorting_dir = os.path.join(computed_dir, 'epoch_block_spike_sorting')
+    if not os.path.exists(epoch_block_sorting_dir):
         return False
     
-    # Iterate through epochs with completed spike sorting
-    for epoch_name in sorted(os.listdir(epoch_sorting_dir)):
-        epoch_sorting_path = os.path.join(epoch_sorting_dir, epoch_name)
-        if not os.path.isdir(epoch_sorting_path):
+    # Iterate through epoch blockswith completed spike sorting
+    for epoch_block_name in sorted(os.listdir(epoch_block_sorting_dir)):
+        epoch_block_sorting_path = os.path.join(epoch_block_sorting_dir, epoch_block_name)
+        if not os.path.isdir(epoch_block_sorting_path):
             continue
         
         # Check if all required sorting files exist
         required_files = ['spike_times.npy', 'spike_labels.npy',
                          'spike_amplitudes.npy', 'templates.npy']
-        all_exist = all(os.path.exists(os.path.join(epoch_sorting_path, f)) for f in required_files)
+        all_exist = all(os.path.exists(os.path.join(epoch_block_sorting_path, f)) for f in required_files)
         if not all_exist:
             continue
         
         # Check if preview already exists
-        epoch_preview_dir = os.path.join(computed_dir, 'epoch_preview', epoch_name)
-        preview_path = os.path.join(epoch_preview_dir, 'epoch.figpack')
+        epoch_block_preview_dir = os.path.join(computed_dir, 'epoch_block_preview', epoch_block_name)
+        preview_path = os.path.join(epoch_block_preview_dir, 'epoch_block.figpack')
         
         if os.path.exists(preview_path):
             continue
         
-        # Get number of segments in this epoch
-        raw_epoch_dir = os.path.join(raw_dir, epoch_name)
-        if not os.path.exists(raw_epoch_dir):
+        # Get number of segments in this epoch_block
+        raw_epoch_block_dir = os.path.join(raw_dir, epoch_block_name)
+        if not os.path.exists(raw_epoch_block_dir):
             continue
         
-        segment_files = sorted([f for f in os.listdir(raw_epoch_dir) if f.endswith('.bin')])
+        segment_files = sorted([f for f in os.listdir(raw_epoch_block_dir) if f.endswith('.bin')])
         num_segments = len(segment_files)
         
         if num_segments == 0:
             continue
         
         # Create preview directory
-        os.makedirs(epoch_preview_dir, exist_ok=True)
+        os.makedirs(epoch_block_preview_dir, exist_ok=True)
         
-        # Generate epoch preview
-        print(f"Generating epoch preview figpack: {epoch_name}/epoch.figpack")
+        # Generate epoch block preview
+        print(f"Generating epoch block preview figpack: {epoch_block_name}/epoch_block.figpack")
         start_time = time.time()
         
-        generate_epoch_preview(
-            epoch_name=epoch_name,
-            epoch_sorting_path=epoch_sorting_path,
+        generate_epoch_block_preview(
+            epoch_block_name=epoch_block_name,
+            epoch_block_sorting_path=epoch_block_sorting_path,
             computed_dir=computed_dir,
             n_channels=n_channels,
             sampling_frequency=sampling_frequency,
@@ -849,9 +849,9 @@ def process_epoch_preview(raw_dir, computed_dir, n_channels, sampling_frequency,
         elapsed_time = time.time() - start_time
         
         # Create .info file
-        create_info_file(os.path.join(epoch_preview_dir, 'epoch'), elapsed_time)
+        create_info_file(os.path.join(epoch_block_preview_dir, 'epoch_block'), elapsed_time)
         
-        print(f"Created epoch_preview: {epoch_name}/epoch.figpack")
+        print(f"Created epoch_block_preview: {epoch_block_name}/epoch_block.figpack")
         something_processed = True
         return True  # Process one at a time
     

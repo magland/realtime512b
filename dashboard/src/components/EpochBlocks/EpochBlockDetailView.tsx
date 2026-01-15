@@ -21,25 +21,25 @@ import {
 import { useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { usePolling } from '../../hooks/usePolling';
-import { api, getEpochPreviewUrl } from '../../services/api';
+import { api, getEpochBlockPreviewUrl } from '../../services/api';
 import { navigateWithQuery } from '../../utils/navigation';
 
-export function EpochDetailView() {
-  const { epochId } = useParams<{ epochId: string }>();
+export function EpochBlockDetailView() {
+  const { epochBlockId } = useParams<{ epochBlockId: string }>();
   const navigate = useNavigate();
 
-  const fetchEpochDetail = useCallback(() => {
-    if (!epochId) return Promise.reject(new Error('No epoch ID provided'));
-    return api.getEpochDetail(epochId);
-  }, [epochId]);
+  const fetchEpochBlockDetail = useCallback(() => {
+    if (!epochBlockId) return Promise.reject(new Error('No epoch ID provided'));
+    return api.getEpochBlockDetail(epochBlockId);
+  }, [epochBlockId]);
 
   const {
-    data: epochData,
-    error: epochError,
-    isLoading: epochLoading,
-  } = usePolling(fetchEpochDetail, { interval: 5000 });
+    data: epochBlockData,
+    error: epochBlockError,
+    isLoading: epochBlockLoading,
+  } = usePolling(fetchEpochBlockDetail, { interval: 5000 });
 
-  if (epochLoading) {
+  if (epochBlockLoading) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="60vh">
         <CircularProgress />
@@ -47,24 +47,24 @@ export function EpochDetailView() {
     );
   }
 
-  if (epochError) {
+  if (epochBlockError) {
     return (
       <Alert severity="error">
-        Error loading epoch details: {epochError.message}
+        Error loading epoch block details: {epochBlockError.message}
       </Alert>
     );
   }
 
-  if (!epochData) {
+  if (!epochBlockData) {
     return (
       <Alert severity="warning">
-        Epoch not found
+        EpochBlock not found
       </Alert>
     );
   }
 
-  const progress = epochData.num_segments > 0
-    ? (epochData.num_segments_sorted / epochData.num_segments) * 100
+  const progress = epochBlockData.num_segments > 0
+    ? (epochBlockData.num_segments_sorted / epochBlockData.num_segments) * 100
     : 0;
 
   return (
@@ -72,13 +72,13 @@ export function EpochDetailView() {
       <Box display="flex" alignItems="center" gap={2} mb={3}>
         <Button
           startIcon={<ArrowBackIcon />}
-          onClick={() => navigate(navigateWithQuery('/epochs'))}
+          onClick={() => navigate(navigateWithQuery('/epochBlocks'))}
           variant="outlined"
         >
-          Back to Epochs
+          Back to EpochBlocks
         </Button>
         <Typography variant="h4">
-          {epochData.epoch}
+          {epochBlockData.epochBlock}
         </Typography>
       </Box>
 
@@ -91,15 +91,15 @@ export function EpochDetailView() {
               <Stack direction="row" spacing={1}>
                 <Chip
                   size="small"
-                  label="Epoch Sorting"
-                  color={epochData.has_epoch_sorting ? 'success' : 'default'}
-                  icon={epochData.has_epoch_sorting ? <CheckCircleIcon /> : <ErrorIcon />}
+                  label="EpochBlock Sorting"
+                  color={epochBlockData.has_epoch_block_sorting ? 'success' : 'default'}
+                  icon={epochBlockData.has_epoch_block_sorting ? <CheckCircleIcon /> : <ErrorIcon />}
                 />
                 <Chip
                   size="small"
-                  label="Epoch Preview"
-                  color={epochData.has_epoch_preview ? 'success' : 'default'}
-                  icon={epochData.has_epoch_preview ? <CheckCircleIcon /> : <ErrorIcon />}
+                  label="EpochBlock Preview"
+                  color={epochBlockData.has_epoch_block_preview ? 'success' : 'default'}
+                  icon={epochBlockData.has_epoch_block_preview ? <CheckCircleIcon /> : <ErrorIcon />}
                 />
               </Stack>
             </Box>
@@ -110,7 +110,7 @@ export function EpochDetailView() {
                   Total Segments
                 </Typography>
                 <Typography variant="h5">
-                  {epochData.num_segments}
+                  {epochBlockData.num_segments}
                 </Typography>
               </Grid>
               <Grid item xs={12} sm={6} md={3}>
@@ -118,7 +118,7 @@ export function EpochDetailView() {
                   Segments Sorted
                 </Typography>
                 <Typography variant="h5">
-                  {epochData.num_segments_sorted}
+                  {epochBlockData.num_segments_sorted}
                 </Typography>
               </Grid>
               <Grid item xs={12} sm={6} md={3}>
@@ -131,30 +131,30 @@ export function EpochDetailView() {
               </Grid>
               <Grid item xs={12} sm={6} md={3}>
                 <Typography variant="body2" color="text.secondary">
-                  Epoch Sorting
+                  EpochBlock Sorting
                 </Typography>
                 <Typography variant="h5">
-                  {epochData.has_epoch_sorting ? 'Yes' : 'No'}
+                  {epochBlockData.has_epoch_block_sorting ? 'Yes' : 'No'}
                 </Typography>
               </Grid>
               <Grid item xs={12} sm={6} md={3}>
                 <Typography variant="body2" color="text.secondary">
-                  Epoch Preview
+                  EpochBlock Preview
                 </Typography>
                 <Typography variant="h5">
-                  {epochData.has_epoch_preview ? 'Yes' : 'No'}
+                  {epochBlockData.has_epoch_block_preview ? 'Yes' : 'No'}
                 </Typography>
               </Grid>
             </Grid>
           </CardContent>
         </Card>
 
-        {/* Epoch Sorting Statistics */}
-        {epochData.epoch_sorting_stats && (
+        {/* EpochBlock Sorting Statistics */}
+        {epochBlockData.epoch_block_sorting_stats && (
           <Card>
             <CardContent>
               <Typography variant="h6" gutterBottom>
-                Epoch Spike Sorting Statistics
+                EpochBlock Spike Sorting Statistics
               </Typography>
               <Divider sx={{ mb: 2 }} />
               
@@ -164,7 +164,7 @@ export function EpochDetailView() {
                     Total Spikes
                   </Typography>
                   <Typography variant="h5">
-                    {epochData.epoch_sorting_stats.num_spikes.toLocaleString()}
+                    {epochBlockData.epoch_block_sorting_stats.num_spikes.toLocaleString()}
                   </Typography>
                 </Grid>
                 <Grid item xs={12} sm={6} md={4}>
@@ -172,7 +172,7 @@ export function EpochDetailView() {
                     Number of Units
                   </Typography>
                   <Typography variant="h5">
-                    {epochData.epoch_sorting_stats.num_units}
+                    {epochBlockData.epoch_block_sorting_stats.num_units}
                   </Typography>
                 </Grid>
                 <Grid item xs={12} sm={6} md={4}>
@@ -180,36 +180,36 @@ export function EpochDetailView() {
                     Number of Templates
                   </Typography>
                   <Typography variant="h5">
-                    {epochData.epoch_sorting_stats.num_templates}
+                    {epochBlockData.epoch_block_sorting_stats.num_templates}
                   </Typography>
                 </Grid>
-                {epochData.epoch_sorting_stats.duration_sec !== null && (
+                {epochBlockData.epoch_block_sorting_stats.duration_sec !== null && (
                   <Grid item xs={12} sm={6} md={4}>
                     <Typography variant="body2" color="text.secondary">
                       Total Duration
                     </Typography>
                     <Typography variant="h5">
-                      {epochData.epoch_sorting_stats.duration_sec.toFixed(2)} sec
+                      {epochBlockData.epoch_block_sorting_stats.duration_sec.toFixed(2)} sec
                     </Typography>
                   </Grid>
                 )}
-                {epochData.epoch_sorting_stats.min_time_sec !== null && (
+                {epochBlockData.epoch_block_sorting_stats.min_time_sec !== null && (
                   <Grid item xs={12} sm={6} md={4}>
                     <Typography variant="body2" color="text.secondary">
                       First Spike Time
                     </Typography>
                     <Typography variant="h5">
-                      {epochData.epoch_sorting_stats.min_time_sec.toFixed(3)} sec
+                      {epochBlockData.epoch_block_sorting_stats.min_time_sec.toFixed(3)} sec
                     </Typography>
                   </Grid>
                 )}
-                {epochData.epoch_sorting_stats.max_time_sec !== null && (
+                {epochBlockData.epoch_block_sorting_stats.max_time_sec !== null && (
                   <Grid item xs={12} sm={6} md={4}>
                     <Typography variant="body2" color="text.secondary">
                       Last Spike Time
                     </Typography>
                     <Typography variant="h5">
-                      {epochData.epoch_sorting_stats.max_time_sec.toFixed(3)} sec
+                      {epochBlockData.epoch_block_sorting_stats.max_time_sec.toFixed(3)} sec
                     </Typography>
                   </Grid>
                 )}
@@ -218,39 +218,39 @@ export function EpochDetailView() {
           </Card>
         )}
 
-        {/* Epoch Preview Card */}
+        {/* EpochBlock Preview Card */}
         <Card>
           <CardContent>
             <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
               <Typography variant="h6">
-                Epoch Preview
+                EpochBlock Preview
               </Typography>
-              {epochData.has_epoch_preview && epochId && (
+              {epochBlockData.has_epoch_block_preview && epochBlockId && (
                 <Button
                   variant="outlined"
                   size="small"
                   startIcon={<OpenInNewIcon />}
-                  onClick={() => window.open(getEpochPreviewUrl(epochId), '_blank')}
+                  onClick={() => window.open(getEpochBlockPreviewUrl(epochBlockId), '_blank')}
                 >
                   Open in New Tab
                 </Button>
               )}
             </Box>
-            {epochData.has_epoch_preview && epochId ? (
+            {epochBlockData.has_epoch_block_preview && epochBlockId ? (
               <Paper sx={{ p: 0, height: 'calc(100vh - 400px)', minHeight: '600px' }}>
                 <iframe
-                  src={getEpochPreviewUrl(epochId)}
+                  src={getEpochBlockPreviewUrl(epochBlockId)}
                   style={{
                     width: '100%',
                     height: '100%',
                     border: 'none',
                   }}
-                  title={`Epoch Preview for ${epochData.epoch}`}
+                  title={`EpochBlock Preview for ${epochBlockData.epochBlock}`}
                 />
               </Paper>
             ) : (
               <Alert severity="info">
-                Epoch preview not available yet. Previews are generated after epoch spike sorting completes.
+                EpochBlock preview not available yet. Previews are generated after epoch block spike sorting completes.
               </Alert>
             )}
           </CardContent>
@@ -260,12 +260,12 @@ export function EpochDetailView() {
         <Card>
           <CardContent>
             <Typography variant="h6" gutterBottom>
-              Segments ({epochData.segments.length})
+              Segments ({epochBlockData.segments.length})
             </Typography>
             <Divider sx={{ mb: 2 }} />
             
             <Stack spacing={1}>
-              {epochData.segments.map((segment, index) => (
+              {epochBlockData.segments.map((segment, index) => (
                 <Box
                   key={segment}
                   display="flex"

@@ -1,8 +1,8 @@
 import axios from 'axios';
 import type {
   Config,
-  EpochsResponse,
-  EpochDetailResponse,
+  EpochBlocksResponse,
+  EpochBlockDetailResponse,
   SegmentsResponse,
   ShiftCoefficients,
   HighActivityResponse,
@@ -36,19 +36,19 @@ class Realtime512bAPI {
     return response.data;
   }
 
-  async getEpochs(): Promise<EpochsResponse> {
-    const response = await axios.get<EpochsResponse>(`${this.baseURL}/epochs`);
+  async getEpochBlocks(): Promise<EpochBlocksResponse> {
+    const response = await axios.get<EpochBlocksResponse>(`${this.baseURL}/epoch_blocks`);
     return response.data;
   }
 
-  async getEpochDetail(epochId: string): Promise<EpochDetailResponse> {
-    const response = await axios.get<EpochDetailResponse>(`${this.baseURL}/epochs/${epochId}`);
+  async getEpochBlockDetail(epochBlockId: string): Promise<EpochBlockDetailResponse> {
+    const response = await axios.get<EpochBlockDetailResponse>(`${this.baseURL}/epoch_blocks/${epochBlockId}`);
     return response.data;
   }
 
-  async getSegments(epochId: string): Promise<SegmentsResponse> {
+  async getSegments(epochBlockId: string): Promise<SegmentsResponse> {
     const response = await axios.get<SegmentsResponse>(
-      `${this.baseURL}/epochs/${epochId}/segments`
+      `${this.baseURL}/epoch_blocks/${epochBlockId}/segments`
     );
     return response.data;
   }
@@ -60,23 +60,23 @@ class Realtime512bAPI {
     return response.data;
   }
 
-  async getHighActivity(epochId: string, filename: string): Promise<HighActivityResponse> {
+  async getHighActivity(epochBlockId: string, filename: string): Promise<HighActivityResponse> {
     const response = await axios.get<HighActivityResponse>(
-      `${this.baseURL}/high_activity/${epochId}/${filename}`
+      `${this.baseURL}/high_activity/${epochBlockId}/${filename}`
     );
     return response.data;
   }
 
-  async getStats(epochId: string, filename: string): Promise<StatsResponse> {
+  async getStats(epochBlockId: string, filename: string): Promise<StatsResponse> {
     const response = await axios.get<StatsResponse>(
-      `${this.baseURL}/stats/${epochId}/${filename}`
+      `${this.baseURL}/stats/${epochBlockId}/${filename}`
     );
     return response.data;
   }
 
   async getBinaryData(
     dataType: DataType,
-    epochId: string,
+    epochBlockId: string,
     filename: string,
     startSec?: number,
     endSec?: number
@@ -85,7 +85,7 @@ class Realtime512bAPI {
     if (startSec !== undefined) params.append('start_sec', startSec.toString());
     if (endSec !== undefined) params.append('end_sec', endSec.toString());
 
-    const url = `${this.baseURL}/${dataType}/${epochId}/${filename}${
+    const url = `${this.baseURL}/${dataType}/${epochBlockId}/${filename}${
       params.toString() ? '?' + params.toString() : ''
     }`;
 
@@ -122,13 +122,13 @@ export const getApiUrl = () => {
 export const api = new Realtime512bAPI(getApiUrl());
 
 // Helper to get preview URL for a segment
-export const getPreviewUrl = (epochId: string, filename: string) => {
+export const getPreviewUrl = (epochBlockId: string, filename: string) => {
   const apiUrl = getApiUrl();
-  return `${apiUrl}/preview/${epochId}/${filename}/index.html?ext_dev_x=figpack-realtime512b:http://localhost:5174/figpack_realtime512b.js`;
+  return `${apiUrl}/preview/${epochBlockId}/${filename}/index.html?ext_dev_x=figpack-realtime512b:http://localhost:5174/figpack_realtime512b.js`;
 };
 
-// Helper to get preview URL for an epoch
-export const getEpochPreviewUrl = (epochId: string) => {
+// Helper to get preview URL for an epochBlock
+export const getEpochBlockPreviewUrl = (epochBlockId: string) => {
   const apiUrl = getApiUrl();
-  return `${apiUrl}/epoch_preview/${epochId}/index.html?ext_dev_x=figpack-realtime512b:http://localhost:5174/figpack_realtime512b.js`;
+  return `${apiUrl}/epoch_block_preview/${epochBlockId}/index.html?ext_dev_x=figpack-realtime512b:http://localhost:5174/figpack_realtime512b.js`;
 };

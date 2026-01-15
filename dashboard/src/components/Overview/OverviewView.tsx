@@ -13,11 +13,11 @@ import {
 } from '@mui/icons-material';
 import { usePolling } from '../../hooks/usePolling';
 import { api } from '../../services/api';
-import type { SegmentWithEpoch } from '../../types';
+import type { SegmentWithEpochBlock } from '../../types';
 
 export function OverviewView() {
   const fetchConfig = useCallback(() => api.getConfig(), []);
-  const fetchEpochs = useCallback(() => api.getEpochs(), []);
+  const fetchEpochBlocks = useCallback(() => api.getEpochBlocks(), []);
   const fetchShiftCoeffs = useCallback(() => api.getShiftCoefficients(), []);
 
   const {
@@ -27,28 +27,26 @@ export function OverviewView() {
   } = usePolling(fetchConfig, { interval: 10000 });
 
   const {
-    data: epochsData,
-    error: epochsError,
-    isLoading: epochsLoading,
-  } = usePolling(fetchEpochs, { interval: 5000 });
+    data: epochBlocksData,
+    error: epochBlocksError,
+    isLoading: epochBlocksLoading,
+  } = usePolling(fetchEpochBlocks, { interval: 5000 });
 
   const {
     data: shiftCoeffs,
     error: shiftsError,
   } = usePolling(fetchShiftCoeffs, { interval: 10000 });
 
-  // Fetch segments for all epochs - we'll do this differently to avoid hook violations
+  // Fetch segments for all epoch blocks- we'll do this differently to avoid hook violations
   // Instead of using hooks in a loop, we'll fetch all segment data separately
-  const epochs = epochsData?.epochs || [];
-  
-  // Create a stable list of all segments by fetching each epoch's segments
-  const [allSegments, setAllSegments] = useState<SegmentWithEpoch[]>([]);
-  const [epochsWithSorting, setEpochsWithSorting] = useState<number>(0);
+  const epochBlocks= epochBlocksData?.epochBlocks|| [];
+
+  // Create a stable list of all segments by fetching each epochBlock's segments
+  const [allSegments, setAllSegments] = useState<SegmentWithEpochBlock[]>([]);
+  const [epochBlocksWithSorting, setEpochBlocksWithSorting] = useState<number>(0);
   
   useEffect(() => {
-    if (!epochs || epochs.length === 0) {
-      setAllSegments([]);
-      setEpochsWithSorting(0);
+    if (!epochBlocks || epochBlocks.length === 0) {
       return;
     }
 
@@ -56,9 +54,9 @@ export function OverviewView() {
 
     const fetchAllSegments = async () => {
       try {
-        const segmentPromises = epochs.map(epochInfo => 
-          api.getSegments(epochInfo.name).then(data => ({
-            epochId: epochInfo.name,
+        const segmentPromises = epochBlocks.map(epochBlockInfo => 
+          api.getSegments(epochBlockInfo.name).then(data => ({
+            epochBlockId: epochBlockInfo.name,
             segments: data.segments,
           }))
         );
@@ -66,20 +64,20 @@ export function OverviewView() {
         const results = await Promise.all(segmentPromises);
         
         if (isMounted) {
-          const combined: SegmentWithEpoch[] = [];
+          const combined: SegmentWithEpochBlock[] = [];
           results.forEach(result => {
             result.segments.forEach(segment => {
               combined.push({
                 ...segment,
-                epoch: result.epochId,
+                epochBlock: result.epochBlockId,
               });
             });
           });
           setAllSegments(combined);
           
-          // Count epochs with completed sorting
-          const epochsWithCompleteSorting = epochs.filter(e => e.has_epoch_sorting).length;
-          setEpochsWithSorting(epochsWithCompleteSorting);
+          // Count epoch blockswith completed sorting
+          const epochBlocksWithCompleteSorting = epochBlocks.filter(e => e.has_epoch_block_sorting).length;
+          setEpochBlocksWithSorting(epochBlocksWithCompleteSorting);
         }
       } catch (error) {
         console.error('Error fetching segments:', error);
@@ -93,9 +91,9 @@ export function OverviewView() {
       isMounted = false;
       clearInterval(interval);
     };
-  }, [epochs]);
+  }, [epochBlocks]);
 
-  if (configLoading || epochsLoading) {
+  if (configLoading || epochBlocksLoading) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="60vh">
         <CircularProgress />
@@ -103,10 +101,10 @@ export function OverviewView() {
     );
   }
 
-  if (configError || epochsError) {
+  if (configError || epochBlocksError) {
     return (
       <Alert severity="error">
-        Error loading data: {(configError || epochsError)?.message}
+        Error loading data: {(configError || epochBlocksError)?.message}
       </Alert>
     );
   }
@@ -169,10 +167,10 @@ export function OverviewView() {
                 </Typography>
                 <Stack spacing={1} mt={2}>
                   <Typography variant="body2" color="text.secondary">
-                    <strong>Total Epochs:</strong> {epochs.length}
+                    <strong>Total EpochBlocks:</strong> {epochBlocks.length}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    <strong>Epochs with Spike Sorting:</strong> {epochsWithSorting} / {epochs.length}
+                    <strong>EpochBlocks with Spike Sorting:</strong> {epochBlocksWithSorting} / {epochBlocks.length}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
                     <strong>Total Segments:</strong> {totalSegments}

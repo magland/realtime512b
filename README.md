@@ -32,8 +32,8 @@ realtime512b start
 ```
 
 This will:
-1. Monitor the `acquisition/` directory for new epochs
-2. Process epochs into raw segments
+1. Monitor the `acquisition/` directory for new epoch blocks
+2. Process epoch blocksinto raw segments
 3. Wait for a `reference_segment.txt` file
 4. Generate computed data (filtered, shifted, statistics, etc.)
 
@@ -56,10 +56,10 @@ You will be able to monitor the processing status and visualize data.
 After some initial processing runs, you will need to specify the reference segment by creating a `reference_segment.txt` file in the experiment directory. The file should contain one line with the text
 
 ```
-epoch_name/segment_002.bin
+epoch_block_name/segment_002.bin
 ```
 
-where `epoch_name` is the name of the epoch containing the reference segment, and `segment_002.bin` is the filename of the segment to use as reference.
+where `epoch_block_name` is the name of the epoch block containing the reference segment, and `segment_002.bin` is the filename of the segment to use as reference.
 
 You may want to use the second segment as the reference to avoid any startup artifacts in the first segment.
 

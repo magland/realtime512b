@@ -18,7 +18,7 @@ from .coarse_sorting import find_nearest_neighbors
 
 def generate_preview(
     *,
-    epoch_name: str,
+    epoch_block_name: str,
     segment_name: str,
     filt_path: str,
     shift_path: str,
@@ -47,8 +47,8 @@ def generate_preview(
     
     Parameters
     ----------
-    epoch_name : str
-        Name of the epoch (e.g., 'epoch_001')
+    epoch_block_name : str
+        Name of the epoch block (e.g., 'epoch_block_001')
     segment_name : str
         Name of the segment file (e.g., 'segment_002.bin')
     filt_path : str
@@ -310,7 +310,7 @@ def generate_preview(
 
     tabs.save(
         preview_path,
-        title=f"Realtime512b Preview - {epoch_name}/{segment_name}"
+        title=f"Realtime512b Preview - {epoch_block_name}/{segment_name}"
     )
 
 
@@ -588,10 +588,10 @@ def generate_time_series_preview(
     return V
 
 
-def generate_epoch_preview(
+def generate_epoch_block_preview(
     *,
-    epoch_name: str,
-    epoch_sorting_path: str,
+    epoch_block_name: str,
+    epoch_block_sorting_path: str,
     computed_dir: str,
     n_channels: int,
     sampling_frequency: float,
@@ -601,18 +601,18 @@ def generate_epoch_preview(
     preview_path: str
 ):
     """
-    Generate a preview figpack for an epoch based on epoch spike sorting.
+    Generate a preview figpack for an epoch block based on epoch block spike sorting.
     
-    For epochs:
-    - Templates View (from epoch sorting)
-    - Autocorrelograms (from epoch spike sorting)
+    For epoch blocks:
+    - Templates View (from epoch block sorting)
+    - Autocorrelograms (from epoch block spike sorting)
     
     Parameters
     ----------
-    epoch_name : str
-        Name of the epoch (e.g., 'epoch_001')
-    epoch_sorting_path : str
-        Path to epoch spike sorting directory
+    epoch_block_name : str
+        Name of the epoch block (e.g., 'epoch_block_001')
+    epoch_block_sorting_path : str
+        Path to epoch block spike sorting directory
     computed_dir : str
         Path to computed directory
     n_channels : int
@@ -622,19 +622,19 @@ def generate_epoch_preview(
     segment_duration_sec : float
         Duration of each segment in seconds
     num_segments : int
-        Number of segments in the epoch
+        Number of segments in the epoch block
     electrode_coords : np.ndarray
         Electrode coordinates array of shape (n_channels, 2)
     preview_path : str
         Output path for the preview figpack
     """
-    # Load epoch spike sorting data
-    templates = np.load(os.path.join(epoch_sorting_path, "templates.npy"))
-    spike_times = np.load(os.path.join(epoch_sorting_path, "spike_times.npy"))
-    spike_labels = np.load(os.path.join(epoch_sorting_path, "spike_labels.npy"))
-    spike_amplitudes = np.load(os.path.join(epoch_sorting_path, "spike_amplitudes.npy"))
+    # Load epoch block spike sorting data
+    templates = np.load(os.path.join(epoch_block_sorting_path, "templates.npy"))
+    spike_times = np.load(os.path.join(epoch_block_sorting_path, "spike_times.npy"))
+    spike_labels = np.load(os.path.join(epoch_block_sorting_path, "spike_labels.npy"))
+    spike_amplitudes = np.load(os.path.join(epoch_block_sorting_path, "spike_amplitudes.npy"))
     
-    print(f"Generating epoch preview for {epoch_name}...")
+    print(f"Generating epoch block preview for {epoch_block_name}...")
     print(f"  {len(templates)} units, {len(spike_times)} spikes")
     
     # Build tab items list
@@ -679,16 +679,16 @@ def generate_epoch_preview(
     
     tabs.save(
         preview_path,
-        title=f"Realtime512b Epoch Preview - {epoch_name}"
+        title=f"Realtime512b EpochBlock Preview - {epoch_block_name}"
     )
-    print(f"Saved epoch preview to {preview_path}")
+    print(f"Saved epoch block preview to {preview_path}")
 
 
 def load_spike_waveforms_and_project(
     *,
     spike_times: np.ndarray,
     spike_segment_indices: np.ndarray,
-    epoch_name: str,
+    epoch_block_name: str,
     computed_dir: str,
     n_channels: int,
     sampling_frequency: float,
@@ -720,7 +720,7 @@ def load_spike_waveforms_and_project(
         
         # Load shifted data for this segment
         segment_name = f"segment_{seg_idx + 1:03d}.bin"
-        shifted_path = os.path.join(computed_dir, 'shifted', epoch_name, segment_name + ".filt.shifted")
+        shifted_path = os.path.join(computed_dir, 'shifted', epoch_block_name, segment_name + ".filt.shifted")
         
         if not os.path.exists(shifted_path):
             continue

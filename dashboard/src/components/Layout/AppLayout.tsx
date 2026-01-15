@@ -36,7 +36,7 @@ export function AppLayout({ children }: AppLayoutProps) {
 
   const menuItems = [
     { id: 'overview', label: 'Overview', icon: <DashboardIcon />, path: '/' },
-    { id: 'epochs', label: 'Epochs', icon: <ViewListIcon />, path: '/epochs' },
+    { id: 'epochBlocks', label: 'EpochBlocks', icon: <ViewListIcon />, path: '/epochBlocks' },
     { id: 'segments', label: 'Segments', icon: <FolderIcon />, path: '/segments' },
   ];
 

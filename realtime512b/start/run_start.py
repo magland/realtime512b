@@ -5,7 +5,7 @@ import sys
 import time
 
 from .config_utils import load_config, load_electrode_coords
-from .epoch_processor import EpochProcessor
+from .epoch_block_processor import EpochBlockProcessor
 from .build_utils import build_ui_components, BuildError
 
 
@@ -43,9 +43,9 @@ def run_start():
         process_high_activity,
         process_reference_sorting,
         process_spike_sorting,
-        process_epoch_spike_sorting,
+        process_epoch_block_spike_sorting,
         process_preview,
-        process_epoch_preview
+        process_epoch_block_preview
     )
     
     # Load configuration
@@ -73,8 +73,8 @@ def run_start():
     os.makedirs(raw_dir, exist_ok=True)
     os.makedirs(computed_dir, exist_ok=True)
     
-    # Create epoch processor
-    epoch_processor = EpochProcessor(
+    # Create epoch block processor
+    epoch_block_processor = EpochBlockProcessor(
         acquisition_dir=acquisition_dir,
         raw_dir=raw_dir,
         n_channels=n_channels,
@@ -95,8 +95,8 @@ def run_start():
     while True:
         something_processed = False
         
-        # Process acquisition epochs -> raw segments
-        if epoch_processor.process_epochs():
+        # Process acquisition epoch blocks-> raw segments
+        if epoch_block_processor.process_epoch_blocks():
             something_processed = True
             up_to_date_printed = False
         
@@ -108,7 +108,7 @@ def run_start():
             if not reference_segment_warning_printed:
                 print("Waiting for reference_segment.txt file...")
                 print("Please create this file with the path to the reference segment.")
-                print("Example content: epoch_001/segment_001.bin")
+                print("Example content: epoch_block_001/segment_001.bin")
                 print()
                 reference_segment_warning_printed = True
         else:
@@ -155,13 +155,13 @@ def run_start():
                     something_processed = True
                     up_to_date_printed = False
                 
-                # Process epoch spike sorting
-                if process_epoch_spike_sorting(raw_dir, computed_dir, n_channels, segment_duration_sec):
+                # Process epoch block spike sorting
+                if process_epoch_block_spike_sorting(raw_dir, computed_dir, n_channels, segment_duration_sec):
                     something_processed = True
                     up_to_date_printed = False
                 
-                # Process epoch preview generation
-                if process_epoch_preview(raw_dir, computed_dir, n_channels, sampling_frequency, segment_duration_sec, electrode_coords):
+                # Process epoch block preview generation
+                if process_epoch_block_preview(raw_dir, computed_dir, n_channels, sampling_frequency, segment_duration_sec, electrode_coords):
                     something_processed = True
                     up_to_date_printed = False
                 

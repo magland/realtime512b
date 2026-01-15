@@ -19,28 +19,26 @@ import {
 import { usePolling } from '../../hooks/usePolling';
 import { api } from '../../services/api';
 import { navigateWithQuery } from '../../utils/navigation';
-import type { SegmentWithEpoch } from '../../types';
+import type { SegmentWithEpochBlock } from '../../types';
 
 export function SegmentsView() {
   const navigate = useNavigate();
 
-  const fetchEpochs = useCallback(() => api.getEpochs(), []);
+  const fetchEpochBlocks = useCallback(() => api.getEpochBlocks(), []);
 
   const {
-    data: epochsData,
-    error: epochsError,
-    isLoading: epochsLoading,
-  } = usePolling(fetchEpochs, { interval: 5000 });
+    data: epochBlocksData,
+    error: epochBlocksError,
+    isLoading: epochBlocksLoading,
+  } = usePolling(fetchEpochBlocks, { interval: 5000 });
 
-  // Fetch segments for all epochs - avoid hook violations
-  const epochs = epochsData?.epochs || [];
-  const [allSegments, setAllSegments] = useState<SegmentWithEpoch[]>([]);
+  // Fetch segments for all epoch blocks- avoid hook violations
+  const epochBlocks= epochBlocksData?.epochBlocks|| [];
+  const [allSegments, setAllSegments] = useState<SegmentWithEpochBlock[]>([]);
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
 
   useEffect(() => {
-    if (!epochs || epochs.length === 0) {
-      setAllSegments([]);
-      setHasLoadedOnce(false);
+    if (!epochBlocks|| epochBlocks.length === 0) {
       return;
     }
 
@@ -48,9 +46,9 @@ export function SegmentsView() {
 
     const fetchAllSegments = async () => {
       try {
-        const segmentPromises = epochs.map(epochInfo =>
-          api.getSegments(epochInfo.name).then(data => ({
-            epochId: epochInfo.name,
+        const segmentPromises = epochBlocks.map(epochBlockInfo =>
+          api.getSegments(epochBlockInfo.name).then(data => ({
+            epochBlockId: epochBlockInfo.name,
             segments: data.segments,
           }))
         );
@@ -58,19 +56,19 @@ export function SegmentsView() {
         const results = await Promise.all(segmentPromises);
         
         if (isMounted) {
-          const combined: SegmentWithEpoch[] = [];
+          const combined: SegmentWithEpochBlock[] = [];
           results.forEach(result => {
             result.segments.forEach(segment => {
               combined.push({
                 ...segment,
-                epoch: result.epochId,
+                epochBlock: result.epochBlockId,
               });
             });
           });
-          // Sort by epoch then filename
+          // Sort by epoch block then filename
           combined.sort((a, b) => {
-            const epochCompare = a.epoch.localeCompare(b.epoch);
-            if (epochCompare !== 0) return epochCompare;
+            const epochBlockCompare = a.epochBlock.localeCompare(b.epochBlock);
+            if (epochBlockCompare !== 0) return epochBlockCompare;
             return a.filename.localeCompare(b.filename);
           });
           setAllSegments(combined);
@@ -89,9 +87,9 @@ export function SegmentsView() {
       isMounted = false;
       clearInterval(interval);
     };
-  }, [epochs]);
+  }, [epochBlocks]);
 
-  const isLoading = epochsLoading || !hasLoadedOnce;
+  const isLoading = epochBlocksLoading || !hasLoadedOnce;
 
   if (isLoading) {
     return (
@@ -101,10 +99,10 @@ export function SegmentsView() {
     );
   }
 
-  if (epochsError) {
+  if (epochBlocksError) {
     return (
       <Alert severity="error">
-        Error loading epochs: {epochsError.message}
+        Error loading epochBlocks: {epochBlocksError.message}
       </Alert>
     );
   }
@@ -132,7 +130,7 @@ export function SegmentsView() {
         <Stack spacing={2}>
           {allSegments.map((segment) => (
             <Card
-              key={`${segment.epoch}/${segment.filename}`}
+              key={`${segment.epochBlock}/${segment.filename}`}
               variant="outlined"
               sx={{
                 cursor: 'pointer',
@@ -141,13 +139,13 @@ export function SegmentsView() {
                   boxShadow: 3,
                 },
               }}
-              onClick={() => navigate(navigateWithQuery(`/segments/${segment.epoch}/${encodeURIComponent(segment.filename)}`))}
+              onClick={() => navigate(navigateWithQuery(`/segments/${segment.epochBlock}/${encodeURIComponent(segment.filename)}`))}
             >
               <CardContent>
                 <Box display="flex" justifyContent="space-between" alignItems="flex-start" flexWrap="wrap" gap={2}>
                   <Box flex="1" minWidth="200px">
                     <Typography variant="h6" gutterBottom>
-                      {segment.epoch}/{segment.filename}
+                      {segment.epochBlock}/{segment.filename}
                     </Typography>
                     <Stack spacing={0.5}>
                       {segment.duration_sec !== undefined && (
