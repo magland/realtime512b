@@ -43,7 +43,9 @@ def run_start():
         process_high_activity,
         process_reference_sorting,
         process_spike_sorting,
-        process_preview
+        process_epoch_spike_sorting,
+        process_preview,
+        process_epoch_preview
     )
     
     # Load configuration
@@ -150,6 +152,16 @@ def run_start():
                 
                 # Process spike sorting
                 if process_spike_sorting(computed_dir, reference_segment, n_channels, sampling_frequency, electrode_coords, coarse_sorting_detect_threshold):
+                    something_processed = True
+                    up_to_date_printed = False
+                
+                # Process epoch spike sorting
+                if process_epoch_spike_sorting(raw_dir, computed_dir, n_channels, segment_duration_sec):
+                    something_processed = True
+                    up_to_date_printed = False
+                
+                # Process epoch preview generation
+                if process_epoch_preview(raw_dir, computed_dir, n_channels, sampling_frequency, segment_duration_sec, electrode_coords):
                     something_processed = True
                     up_to_date_printed = False
                 

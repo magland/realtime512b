@@ -15,6 +15,7 @@ import {
 import {
   Dashboard as DashboardIcon,
   Folder as FolderIcon,
+  ViewList as ViewListIcon,
 } from '@mui/icons-material';
 import { navigateWithQuery } from '../../utils/navigation';
 
@@ -35,6 +36,7 @@ export function AppLayout({ children }: AppLayoutProps) {
 
   const menuItems = [
     { id: 'overview', label: 'Overview', icon: <DashboardIcon />, path: '/' },
+    { id: 'epochs', label: 'Epochs', icon: <ViewListIcon />, path: '/epochs' },
     { id: 'segments', label: 'Segments', icon: <FolderIcon />, path: '/segments' },
   ];
 

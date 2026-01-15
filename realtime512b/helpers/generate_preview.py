@@ -586,3 +586,420 @@ def generate_time_series_preview(
         alpha=0.3
     )
     return V
+
+
+def generate_epoch_preview(
+    *,
+    epoch_name: str,
+    epoch_sorting_path: str,
+    computed_dir: str,
+    n_channels: int,
+    sampling_frequency: float,
+    segment_duration_sec: float,
+    num_segments: int,
+    electrode_coords: np.ndarray,
+    preview_path: str
+):
+    """
+    Generate a preview figpack for an epoch based on epoch spike sorting.
+    
+    For epochs:
+    - Templates View (from epoch sorting)
+    - Autocorrelograms (from epoch spike sorting)
+    - Cluster Separation (from epoch spike sorting)
+    - MEA Firing Rates & Amplitudes (time-binned per segment)
+    
+    Parameters
+    ----------
+    epoch_name : str
+        Name of the epoch (e.g., 'epoch_001')
+    epoch_sorting_path : str
+        Path to epoch spike sorting directory
+    computed_dir : str
+        Path to computed directory
+    n_channels : int
+        Number of channels
+    sampling_frequency : float
+        Sampling frequency in Hz
+    segment_duration_sec : float
+        Duration of each segment in seconds
+    num_segments : int
+        Number of segments in the epoch
+    electrode_coords : np.ndarray
+        Electrode coordinates array of shape (n_channels, 2)
+    preview_path : str
+        Output path for the preview figpack
+    """
+    # Load epoch spike sorting data
+    templates = np.load(os.path.join(epoch_sorting_path, "templates.npy"))
+    spike_times = np.load(os.path.join(epoch_sorting_path, "spike_times.npy"))
+    spike_labels = np.load(os.path.join(epoch_sorting_path, "spike_labels.npy"))
+    spike_amplitudes = np.load(os.path.join(epoch_sorting_path, "spike_amplitudes.npy"))
+    
+    print(f"Generating epoch preview for {epoch_name}...")
+    print(f"  {len(templates)} units, {len(spike_times)} spikes")
+    
+    # Build tab items list
+    tab_items = []
+    
+    # Templates view
+    if len(templates) > 0:
+        templates_view = TemplatesView(
+            templates=templates,
+            electrode_coords=electrode_coords
+        )
+        tab_items.append(vv.TabLayoutItem(
+            view=templates_view,
+            label="Templates"
+        ))
+    else:
+        tab_items.append(vv.TabLayoutItem(
+            view=vv.Markdown(content="No templates found."),
+            label="Templates"
+        ))
+    
+    # Autocorrelograms
+    if len(spike_times) > 0:
+        autocorrelograms_view = create_autocorrelograms_view(
+            spike_times=spike_times,
+            spike_labels=spike_labels
+        )
+        tab_items.append(vv.TabLayoutItem(
+            view=autocorrelograms_view,
+            label="Autocorrelograms"
+        ))
+    else:
+        tab_items.append(vv.TabLayoutItem(
+            view=vv.Markdown(content="No spikes found."),
+            label="Autocorrelograms"
+        ))
+    
+    # Cluster Separation - load shifted data from segments
+    if len(templates) > 0 and len(spike_times) > 0:
+        print('Creating cluster separation view for epoch...')
+        cluster_separation_view = create_epoch_cluster_separation_view(
+            templates=templates,
+            spike_times=spike_times,
+            spike_labels=spike_labels,
+            epoch_name=epoch_name,
+            computed_dir=computed_dir,
+            n_channels=n_channels,
+            sampling_frequency=sampling_frequency,
+            segment_duration_sec=segment_duration_sec,
+            num_neighbors=10
+        )
+        tab_items.append(vv.TabLayoutItem(
+            view=cluster_separation_view,
+            label="Cluster Separation"
+        ))
+    else:
+        tab_items.append(vv.TabLayoutItem(
+            view=vv.Markdown(content="No spike data available."),
+            label="Cluster Separation"
+        ))
+    
+    # MEA Firing Rates & Amplitudes (time-binned per segment)
+    if len(spike_times) > 0 and num_segments > 0:
+        print('Creating firing rates and amplitudes view for epoch...')
+        firing_rates_view = create_epoch_firing_rates_view(
+            spike_times=spike_times,
+            spike_labels=spike_labels,
+            spike_amplitudes=spike_amplitudes,
+            electrode_coords=electrode_coords,
+            templates=templates,
+            n_channels=n_channels,
+            segment_duration_sec=segment_duration_sec,
+            num_segments=num_segments
+        )
+        tab_items.append(vv.TabLayoutItem(
+            view=firing_rates_view,
+            label="Firing Rates"
+        ))
+    else:
+        tab_items.append(vv.TabLayoutItem(
+            view=vv.Markdown(content="No spike data available."),
+            label="Firing Rates"
+        ))
+    
+    # Combine into tab layout
+    tabs = vv.TabLayout(
+        items=tab_items
+    )
+    
+    tabs.save(
+        preview_path,
+        title=f"Realtime512b Epoch Preview - {epoch_name}"
+    )
+    print(f"Saved epoch preview to {preview_path}")
+
+
+def create_epoch_cluster_separation_view(
+    *,
+    templates: np.ndarray,
+    spike_times: np.ndarray,
+    spike_labels: np.ndarray,
+    epoch_name: str,
+    computed_dir: str,
+    n_channels: int,
+    sampling_frequency: float,
+    segment_duration_sec: float,
+    num_neighbors: int = 5
+):
+    """
+    Create a cluster separation view for epoch-level spike sorting.
+    Loads shifted data from segments as needed.
+    
+    Parameters
+    ----------
+    templates : np.ndarray
+        Templates array of shape (num_units, num_channels)
+    spike_times : np.ndarray
+        Spike times in seconds (epoch-level)
+    spike_labels : np.ndarray
+        Spike labels (1-based)
+    epoch_name : str
+        Name of the epoch
+    computed_dir : str
+        Path to computed directory
+    n_channels : int
+        Number of channels
+    sampling_frequency : float
+        Sampling frequency in Hz
+    segment_duration_sec : float
+        Duration of each segment in seconds
+    num_neighbors : int
+        Number of nearest neighbors to compute for each unit
+    
+    Returns
+    -------
+    ClusterSeparationView
+    """
+    num_units = templates.shape[0]
+    
+    # Find nearest neighbors in template space
+    print(f'Finding {num_neighbors} nearest neighbors for each unit in template space...')
+    neighbor_indices = find_nearest_neighbors(templates, num_neighbors=num_neighbors + 1)
+    
+    # Map spike times to segment indices
+    spike_segment_indices = (spike_times / segment_duration_sec).astype(int)
+    
+    # Build separation items for each unit and its neighbors
+    processed_pairs = set()
+    separation_items = []
+    
+    for unit_idx in range(num_units):
+        unit_id = unit_idx + 1  # 1-based
+        
+        # Get neighbor indices (excluding self at index 0)
+        neighbor_unit_indices = neighbor_indices[unit_idx, 1:]
+        
+        for neighbor_idx in neighbor_unit_indices:
+            neighbor_id = neighbor_idx + 1  # 1-based
+            
+            # Skip if we've already processed this pair
+            pair_key = tuple(sorted([unit_id, neighbor_id]))
+            if pair_key in processed_pairs:
+                continue
+            processed_pairs.add(pair_key)
+            
+            # Get spike indices for both units
+            spike_inds_1 = np.where(spike_labels == unit_id)[0]
+            spike_inds_2 = np.where(spike_labels == neighbor_id)[0]
+            
+            if len(spike_inds_1) < 2 or len(spike_inds_2) < 2:
+                continue
+            
+            # Compute discriminant direction
+            template_1 = templates[unit_idx, :]
+            template_2 = templates[neighbor_idx, :]
+            discriminant_direction = template_2 - template_1
+            norm = np.linalg.norm(discriminant_direction)
+            if norm > 0:
+                discriminant_direction = discriminant_direction / norm
+            else:
+                continue
+            
+            # Load spike waveforms from segments
+            projections_1 = load_spike_waveforms_and_project(
+                spike_times=spike_times[spike_inds_1],
+                spike_segment_indices=spike_segment_indices[spike_inds_1],
+                epoch_name=epoch_name,
+                computed_dir=computed_dir,
+                n_channels=n_channels,
+                sampling_frequency=sampling_frequency,
+                segment_duration_sec=segment_duration_sec,
+                discriminant_direction=discriminant_direction
+            )
+            
+            projections_2 = load_spike_waveforms_and_project(
+                spike_times=spike_times[spike_inds_2],
+                spike_segment_indices=spike_segment_indices[spike_inds_2],
+                epoch_name=epoch_name,
+                computed_dir=computed_dir,
+                n_channels=n_channels,
+                sampling_frequency=sampling_frequency,
+                segment_duration_sec=segment_duration_sec,
+                discriminant_direction=discriminant_direction
+            )
+            
+            if len(projections_1) == 0 or len(projections_2) == 0:
+                continue
+            
+            # Create separation item
+            item = ClusterSeparationViewItem(
+                unit_id_1=unit_id,
+                unit_id_2=neighbor_id,
+                projections_1=projections_1,
+                projections_2=projections_2
+            )
+            separation_items.append(item)
+    
+    print(f'Created {len(separation_items)} separation items for epoch')
+    
+    return ClusterSeparationView(separation_items=separation_items)
+
+
+def load_spike_waveforms_and_project(
+    *,
+    spike_times: np.ndarray,
+    spike_segment_indices: np.ndarray,
+    epoch_name: str,
+    computed_dir: str,
+    n_channels: int,
+    sampling_frequency: float,
+    segment_duration_sec: float,
+    discriminant_direction: np.ndarray
+):
+    """
+    Load spike waveforms from segment shifted data and project onto discriminant direction.
+    
+    Returns
+    -------
+    projections : np.ndarray
+        Projected values
+    """
+    projections_list = []
+    
+    # Group spikes by segment
+    unique_segments = np.unique(spike_segment_indices)
+    
+    for seg_idx in unique_segments:
+        # Get spikes in this segment
+        mask = spike_segment_indices == seg_idx
+        segment_spike_times = spike_times[mask]
+        
+        # Compute frame indices within this segment
+        segment_start_time = seg_idx * segment_duration_sec
+        relative_times = segment_spike_times - segment_start_time
+        spike_frames = (relative_times * sampling_frequency).astype(int)
+        
+        # Load shifted data for this segment
+        segment_name = f"segment_{seg_idx + 1:03d}.bin"
+        shifted_path = os.path.join(computed_dir, 'shifted', epoch_name, segment_name + ".filt.shifted")
+        
+        if not os.path.exists(shifted_path):
+            continue
+        
+        # Load shifted data
+        shifted_data = np.fromfile(shifted_path, dtype=np.int16).reshape(-1, n_channels)
+        
+        # Filter out invalid frame indices
+        valid_mask = (spike_frames >= 0) & (spike_frames < shifted_data.shape[0])
+        valid_spike_frames = spike_frames[valid_mask]
+        
+        if len(valid_spike_frames) == 0:
+            continue
+        
+        # Extract spike waveforms and project
+        spike_waveforms = shifted_data[valid_spike_frames, :]
+        projections = np.dot(spike_waveforms, discriminant_direction)
+        projections_list.append(projections)
+    
+    if len(projections_list) == 0:
+        return np.array([], dtype=np.float32)
+    
+    return np.concatenate(projections_list)
+
+
+def create_epoch_firing_rates_view(
+    *,
+    spike_times: np.ndarray,
+    spike_labels: np.ndarray,
+    spike_amplitudes: np.ndarray,
+    electrode_coords: np.ndarray,
+    templates: np.ndarray,
+    n_channels: int,
+    segment_duration_sec: float,
+    num_segments: int
+):
+    """
+    Create MEA Firing Rates & Amplitudes view for epoch with time bins per segment.
+    
+    Parameters
+    ----------
+    spike_times : np.ndarray
+        Spike times in seconds (epoch-level)
+    spike_labels : np.ndarray
+        Spike labels (1-based)
+    spike_amplitudes : np.ndarray
+        Spike amplitudes
+    electrode_coords : np.ndarray
+        Electrode coordinates
+    templates : np.ndarray
+        Templates array of shape (num_units, num_channels)
+    n_channels : int
+        Number of channels
+    segment_duration_sec : float
+        Duration of each segment in seconds
+    num_segments : int
+        Number of segments in the epoch
+    
+    Returns
+    -------
+    MEAFiringRatesAndAmplitudes
+    """
+    # Initialize arrays for firing rates and amplitudes
+    # Shape: (num_segments, n_channels)
+    firing_rates = np.zeros((num_segments, n_channels), dtype=np.float32)
+    mean_amplitudes = np.zeros((num_segments, n_channels), dtype=np.float32)
+    
+    # Get unique labels
+    unique_labels = np.unique(spike_labels)
+    
+    # For each segment
+    for seg_idx in range(num_segments):
+        segment_start_time = seg_idx * segment_duration_sec
+        segment_end_time = (seg_idx + 1) * segment_duration_sec
+        
+        # Get spikes in this segment
+        segment_mask = (spike_times >= segment_start_time) & (spike_times < segment_end_time)
+        segment_spike_labels = spike_labels[segment_mask]
+        segment_spike_amplitudes = spike_amplitudes[segment_mask]
+        
+        # For each unit, find its primary channel and compute stats
+        for label in unique_labels:
+            if label < 1 or label > len(templates):
+                continue
+            
+            # Find primary channel (channel with max absolute template value)
+            template_idx = label - 1
+            template = templates[template_idx, :]
+            primary_channel = np.argmax(np.abs(template))
+            
+            # Get spikes for this unit in this segment
+            unit_mask = segment_spike_labels == label
+            unit_spike_amplitudes = segment_spike_amplitudes[unit_mask]
+            
+            if len(unit_spike_amplitudes) > 0:
+                # Compute firing rate (Hz)
+                firing_rate = len(unit_spike_amplitudes) / segment_duration_sec
+                mean_amplitude = np.mean(np.abs(unit_spike_amplitudes))
+                
+                firing_rates[seg_idx, primary_channel] += firing_rate
+                mean_amplitudes[seg_idx, primary_channel] += mean_amplitude
+    
+    return MEAFiringRatesAndAmplitudes(
+        electrode_coords=electrode_coords,
+        mean_firing_rates=firing_rates,
+        mean_spike_amplitudes=mean_amplitudes
+    )

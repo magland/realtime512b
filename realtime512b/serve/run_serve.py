@@ -13,6 +13,8 @@ from .api_handlers import (
     get_high_activity_handler,
     get_stats_handler,
     get_preview_file_handler,
+    get_epoch_detail_handler,
+    get_epoch_preview_file_handler,
 )
 
 
@@ -39,6 +41,7 @@ def run_serve(host="0.0.0.0", port=5000):
     print("API Endpoints:")
     print("  GET /api/config - Configuration")
     print("  GET /api/epochs - Available epochs")
+    print("  GET /api/epochs/<epoch_id> - Epoch details and epoch sorting stats")
     print("  GET /api/epochs/<epoch_id>/segments - Segments in an epoch")
     print("  GET /api/shift_coefficients - Shift coefficients")
     print("  GET /api/raw/<epoch_id>/<filename>?start_sec=X&end_sec=Y - Raw data")
@@ -47,6 +50,7 @@ def run_serve(host="0.0.0.0", port=5000):
     print("  GET /api/high_activity/<epoch_id>/<filename> - High activity intervals")
     print("  GET /api/stats/<epoch_id>/<filename> - Spike statistics")
     print("  GET /api/preview/<epoch_id>/<filename>/<filepath> - Preview files (with range support)")
+    print("  GET /api/epoch_preview/<epoch_id>/<filepath> - Epoch preview files (with range support)")
     print("")
     
     # Create Flask app
@@ -69,6 +73,10 @@ def run_serve(host="0.0.0.0", port=5000):
     @app.route("/api/epochs", methods=["GET"])
     def get_epochs():
         return get_epochs_handler()
+    
+    @app.route("/api/epochs/<epoch_id>", methods=["GET"])
+    def get_epoch_detail(epoch_id):
+        return get_epoch_detail_handler(epoch_id)
     
     @app.route("/api/epochs/<epoch_id>/segments", methods=["GET"])
     def get_segments(epoch_id):
@@ -101,6 +109,10 @@ def run_serve(host="0.0.0.0", port=5000):
     @app.route("/api/preview/<epoch_id>/<filename>/<path:filepath>", methods=["GET"])
     def get_preview_file(epoch_id, filename, filepath):
         return get_preview_file_handler(epoch_id, filename, filepath)
+    
+    @app.route("/api/epoch_preview/<epoch_id>/<path:filepath>", methods=["GET"])
+    def get_epoch_preview_file(epoch_id, filepath):
+        return get_epoch_preview_file_handler(epoch_id, filepath)
     
     # Run the server
     app.run(host=host, port=port, debug=False)

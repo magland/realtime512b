@@ -43,10 +43,12 @@ export function OverviewView() {
   
   // Create a stable list of all segments by fetching each epoch's segments
   const [allSegments, setAllSegments] = useState<SegmentWithEpoch[]>([]);
+  const [epochsWithSorting, setEpochsWithSorting] = useState<number>(0);
   
   useEffect(() => {
     if (!epochs || epochs.length === 0) {
       setAllSegments([]);
+      setEpochsWithSorting(0);
       return;
     }
 
@@ -54,9 +56,9 @@ export function OverviewView() {
 
     const fetchAllSegments = async () => {
       try {
-        const segmentPromises = epochs.map(epochId => 
-          api.getSegments(epochId).then(data => ({
-            epochId,
+        const segmentPromises = epochs.map(epochInfo => 
+          api.getSegments(epochInfo.name).then(data => ({
+            epochId: epochInfo.name,
             segments: data.segments,
           }))
         );
@@ -74,6 +76,10 @@ export function OverviewView() {
             });
           });
           setAllSegments(combined);
+          
+          // Count epochs with completed sorting
+          const epochsWithCompleteSorting = epochs.filter(e => e.has_epoch_sorting).length;
+          setEpochsWithSorting(epochsWithCompleteSorting);
         }
       } catch (error) {
         console.error('Error fetching segments:', error);
@@ -109,6 +115,7 @@ export function OverviewView() {
   const processedSegments = allSegments.filter(
     (s) => s.has_filt && s.has_shifted && s.has_reference_sorting
   ).length;
+  const sortedSegments = allSegments.filter((s) => s.has_spike_sorting).length;
   const totalDuration = allSegments.reduce((sum, s) => sum + (s.duration_sec || 0), 0);
 
   return (
@@ -165,7 +172,13 @@ export function OverviewView() {
                     <strong>Total Epochs:</strong> {epochs.length}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
+                    <strong>Epochs with Spike Sorting:</strong> {epochsWithSorting} / {epochs.length}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
                     <strong>Total Segments:</strong> {totalSegments}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    <strong>Segments Spike Sorted:</strong> {sortedSegments} / {totalSegments}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
                     <strong>Fully Processed:</strong> {processedSegments} / {totalSegments}

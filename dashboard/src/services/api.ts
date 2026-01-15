@@ -2,6 +2,7 @@ import axios from 'axios';
 import type {
   Config,
   EpochsResponse,
+  EpochDetailResponse,
   SegmentsResponse,
   ShiftCoefficients,
   HighActivityResponse,
@@ -37,6 +38,11 @@ class Realtime512bAPI {
 
   async getEpochs(): Promise<EpochsResponse> {
     const response = await axios.get<EpochsResponse>(`${this.baseURL}/epochs`);
+    return response.data;
+  }
+
+  async getEpochDetail(epochId: string): Promise<EpochDetailResponse> {
+    const response = await axios.get<EpochDetailResponse>(`${this.baseURL}/epochs/${epochId}`);
     return response.data;
   }
 
@@ -119,4 +125,10 @@ export const api = new Realtime512bAPI(getApiUrl());
 export const getPreviewUrl = (epochId: string, filename: string) => {
   const apiUrl = getApiUrl();
   return `${apiUrl}/preview/${epochId}/${filename}/index.html?ext_dev_x=figpack-realtime512b:http://localhost:5174/figpack_realtime512b.js`;
+};
+
+// Helper to get preview URL for an epoch
+export const getEpochPreviewUrl = (epochId: string) => {
+  const apiUrl = getApiUrl();
+  return `${apiUrl}/epoch_preview/${epochId}/index.html?ext_dev_x=figpack-realtime512b:http://localhost:5174/figpack_realtime512b.js`;
 };

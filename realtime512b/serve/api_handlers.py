@@ -21,17 +21,53 @@ def get_config_handler():
 def get_epochs_handler():
     """Returns list of available epochs."""
     raw_dir = os.path.join(os.getcwd(), "raw")
+    computed_dir = os.path.join(os.getcwd(), "computed")
     
     if not os.path.exists(raw_dir):
         return jsonify({"error": "raw/ directory not found"}), 404
     
-    epochs = []
+    epochs_info = []
     for item in os.listdir(raw_dir):
         item_path = os.path.join(raw_dir, item)
         if os.path.isdir(item_path) and item.startswith("epoch_"):
-            epochs.append(item)
+            # Get number of segments in this epoch
+            segment_files = [f for f in os.listdir(item_path) if f.endswith(".bin")]
+            num_segments = len(segment_files)
+            
+            # Check for epoch spike sorting
+            epoch_sorting_dir = os.path.join(computed_dir, "epoch_spike_sorting", item)
+            has_epoch_sorting = (
+                os.path.exists(os.path.join(epoch_sorting_dir, "templates.npy")) and
+                os.path.exists(os.path.join(epoch_sorting_dir, "spike_times.npy")) and
+                os.path.exists(os.path.join(epoch_sorting_dir, "spike_labels.npy")) and
+                os.path.exists(os.path.join(epoch_sorting_dir, "spike_amplitudes.npy"))
+            )
+            
+            # Check for epoch preview
+            epoch_preview_dir = os.path.join(computed_dir, "epoch_preview", item, "epoch.figpack")
+            has_epoch_preview = os.path.exists(epoch_preview_dir) and os.path.isdir(epoch_preview_dir)
+            
+            # Count how many segments have spike sorting completed
+            spike_sorting_dir = os.path.join(computed_dir, "spike_sorting", item)
+            num_segments_sorted = 0
+            if os.path.exists(spike_sorting_dir):
+                for segment_file in segment_files:
+                    segment_sorting_path = os.path.join(spike_sorting_dir, segment_file)
+                    if (os.path.exists(os.path.join(segment_sorting_path, "templates.npy")) and
+                        os.path.exists(os.path.join(segment_sorting_path, "spike_times.npy")) and
+                        os.path.exists(os.path.join(segment_sorting_path, "spike_labels.npy")) and
+                        os.path.exists(os.path.join(segment_sorting_path, "spike_amplitudes.npy"))):
+                        num_segments_sorted += 1
+            
+            epochs_info.append({
+                "name": item,
+                "num_segments": num_segments,
+                "num_segments_sorted": num_segments_sorted,
+                "has_epoch_sorting": has_epoch_sorting,
+                "has_epoch_preview": has_epoch_preview
+            })
     
-    return jsonify({"epochs": sorted(epochs)})
+    return jsonify({"epochs": sorted(epochs_info, key=lambda x: x["name"])})
 
 
 def get_segments_handler(epoch_id):
@@ -244,6 +280,98 @@ def get_preview_file_handler(epoch_id, filename, filepath):
     # Serve the file with range request support
     return send_from_directory(
         preview_dir,
+        filepath,
+        conditional=True  # Enables range request support
+    )
+
+
+def get_epoch_detail_handler(epoch_id):
+    """Returns detailed information about an epoch including epoch sorting data."""
+    raw_dir = os.path.join(os.getcwd(), "raw", epoch_id)
+    computed_dir = os.path.join(os.getcwd(), "computed")
+    
+    if not os.path.exists(raw_dir):
+        return jsonify({"error": f"Epoch {epoch_id} not found"}), 404
+    
+    # Get segment list
+    segment_files = sorted([f for f in os.listdir(raw_dir) if f.endswith(".bin")])
+    num_segments = len(segment_files)
+    
+    # Check epoch spike sorting status
+    epoch_sorting_dir = os.path.join(computed_dir, "epoch_spike_sorting", epoch_id)
+    has_epoch_sorting = (
+        os.path.exists(os.path.join(epoch_sorting_dir, "templates.npy")) and
+        os.path.exists(os.path.join(epoch_sorting_dir, "spike_times.npy")) and
+        os.path.exists(os.path.join(epoch_sorting_dir, "spike_labels.npy")) and
+        os.path.exists(os.path.join(epoch_sorting_dir, "spike_amplitudes.npy"))
+    )
+    
+    # Check epoch preview status
+    epoch_preview_dir = os.path.join(computed_dir, "epoch_preview", epoch_id, "epoch.figpack")
+    has_epoch_preview = os.path.exists(epoch_preview_dir) and os.path.isdir(epoch_preview_dir)
+    
+    # Get epoch sorting statistics if available
+    epoch_sorting_stats = None
+    if has_epoch_sorting:
+        import numpy as np
+        spike_times = np.load(os.path.join(epoch_sorting_dir, "spike_times.npy"))
+        spike_labels = np.load(os.path.join(epoch_sorting_dir, "spike_labels.npy"))
+        templates = np.load(os.path.join(epoch_sorting_dir, "templates.npy"))
+        
+        # Load config to get segment duration
+        config_path = os.path.join(os.getcwd(), "realtime512b.yaml")
+        if os.path.exists(config_path):
+            with open(config_path, "r") as f:
+                config = yaml.safe_load(f)
+            segment_duration_sec = config.get("raw_segment_duration_sec", 30)
+            epoch_duration_sec = num_segments * segment_duration_sec
+        else:
+            epoch_duration_sec = None
+        
+        unique_labels = np.unique(spike_labels)
+        epoch_sorting_stats = {
+            "num_spikes": len(spike_times),
+            "num_units": len(unique_labels),
+            "num_templates": len(templates),
+            "duration_sec": epoch_duration_sec,
+            "min_time_sec": float(np.min(spike_times)) if len(spike_times) > 0 else None,
+            "max_time_sec": float(np.max(spike_times)) if len(spike_times) > 0 else None
+        }
+    
+    # Count segments with spike sorting
+    spike_sorting_dir = os.path.join(computed_dir, "spike_sorting", epoch_id)
+    num_segments_sorted = 0
+    if os.path.exists(spike_sorting_dir):
+        for segment_file in segment_files:
+            segment_sorting_path = os.path.join(spike_sorting_dir, segment_file)
+            if (os.path.exists(os.path.join(segment_sorting_path, "templates.npy")) and
+                os.path.exists(os.path.join(segment_sorting_path, "spike_times.npy")) and
+                os.path.exists(os.path.join(segment_sorting_path, "spike_labels.npy")) and
+                os.path.exists(os.path.join(segment_sorting_path, "spike_amplitudes.npy"))):
+                num_segments_sorted += 1
+    
+    return jsonify({
+        "epoch": epoch_id,
+        "num_segments": num_segments,
+        "num_segments_sorted": num_segments_sorted,
+        "has_epoch_sorting": has_epoch_sorting,
+        "has_epoch_preview": has_epoch_preview,
+        "epoch_sorting_stats": epoch_sorting_stats,
+        "segments": segment_files
+    })
+
+
+def get_epoch_preview_file_handler(epoch_id, filepath):
+    """Serves static files from epoch preview directories with range request support."""
+    computed_dir = os.path.join(os.getcwd(), "computed")
+    epoch_preview_dir = os.path.join(computed_dir, "epoch_preview", epoch_id, "epoch.figpack")
+    
+    if not os.path.exists(epoch_preview_dir):
+        return jsonify({"error": "Epoch preview directory not found"}), 404
+    
+    # Serve the file with range request support
+    return send_from_directory(
+        epoch_preview_dir,
         filepath,
         conditional=True  # Enables range request support
     )

@@ -48,9 +48,9 @@ export function SegmentsView() {
 
     const fetchAllSegments = async () => {
       try {
-        const segmentPromises = epochs.map(epochId =>
-          api.getSegments(epochId).then(data => ({
-            epochId,
+        const segmentPromises = epochs.map(epochInfo =>
+          api.getSegments(epochInfo.name).then(data => ({
+            epochId: epochInfo.name,
             segments: data.segments,
           }))
         );

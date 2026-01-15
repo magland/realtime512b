@@ -12,8 +12,9 @@ from ..helpers.high_activity_intervals import detect_high_activity_intervals
 from ..helpers.channel_spike_stats import compute_channel_spike_stats
 from ..helpers.coarse_sorting import compute_coarse_sorting
 from ..helpers.spike_sorting import compute_spike_sorting
+from ..helpers.epoch_spike_sorting import compute_epoch_spike_sorting
 from ..helpers.file_info import create_info_file
-from ..helpers.generate_preview import generate_preview
+from ..helpers.generate_preview import generate_preview, generate_epoch_preview
 
 
 def get_reference_segment():
@@ -651,5 +652,207 @@ def process_preview(computed_dir, reference_segment, n_channels, sampling_freque
             print(f"Created preview: {epoch_name}/{segment_name}.figpack")
             something_processed = True
             return True  # Process one at a time
+    
+    return something_processed
+
+
+def process_epoch_spike_sorting(raw_dir, computed_dir, n_channels, segment_duration_sec):
+    """
+    Create epoch-level spike sorting by combining segment spike sortings.
+    Pieces together spike times, labels, and amplitudes from all segments,
+    and computes templates as weighted mean of segment templates.
+    Only processes epochs where all segments have completed spike sorting.
+    Returns True if any processing was done.
+    """
+    something_processed = False
+    
+    # Check if raw directory exists
+    if not os.path.exists(raw_dir):
+        return False
+    
+    # Check if spike_sorting directory exists
+    spike_sorting_dir = os.path.join(computed_dir, 'spike_sorting')
+    if not os.path.exists(spike_sorting_dir):
+        return False
+    
+    # Iterate through epochs in raw/ directory
+    for epoch_name in sorted(os.listdir(raw_dir)):
+        epoch_path = os.path.join(raw_dir, epoch_name)
+        if not os.path.isdir(epoch_path):
+            continue
+        
+        # Check if epoch spike sorting already exists
+        epoch_sorting_dir = os.path.join(computed_dir, 'epoch_spike_sorting', epoch_name)
+        
+        if os.path.exists(epoch_sorting_dir):
+            # Check if all files exist
+            required_files = ['spike_times.npy', 'spike_labels.npy',
+                             'spike_amplitudes.npy', 'templates.npy']
+            all_exist = all(os.path.exists(os.path.join(epoch_sorting_dir, f)) for f in required_files)
+            if all_exist:
+                continue
+        
+        # Get all segments in this epoch
+        segment_files = sorted([
+            f for f in os.listdir(epoch_path)
+            if f.endswith('.bin')
+        ])
+        
+        if not segment_files:
+            continue
+        
+        # Check if all segments have spike sorting completed
+        segment_sortings = []
+        all_segments_ready = True
+        
+        for segment_file in segment_files:
+            segment_name = segment_file  # e.g., "segment_001.bin"
+            segment_sorting_path = os.path.join(spike_sorting_dir, epoch_name, segment_name)
+            
+            # Check if sorting exists for this segment
+            required_files = ['spike_times.npy', 'spike_labels.npy',
+                             'spike_amplitudes.npy', 'templates.npy']
+            all_files_exist = all(os.path.exists(os.path.join(segment_sorting_path, f)) for f in required_files)
+            
+            if not all_files_exist:
+                all_segments_ready = False
+                break
+            
+            # Extract segment number from filename (e.g., "segment_001.bin" -> 1)
+            try:
+                segment_num = int(segment_name.replace('segment_', '').replace('.bin', ''))
+            except ValueError:
+                all_segments_ready = False
+                break
+            
+            # Load sorting data for this segment
+            spike_times = np.load(os.path.join(segment_sorting_path, 'spike_times.npy'))
+            spike_labels = np.load(os.path.join(segment_sorting_path, 'spike_labels.npy'))
+            spike_amplitudes = np.load(os.path.join(segment_sorting_path, 'spike_amplitudes.npy'))
+            templates = np.load(os.path.join(segment_sorting_path, 'templates.npy'))
+            
+            segment_sortings.append({
+                'spike_times': spike_times,
+                'spike_labels': spike_labels,
+                'spike_amplitudes': spike_amplitudes,
+                'templates': templates,
+                'segment_num': segment_num
+            })
+        
+        if not all_segments_ready:
+            continue
+        
+        # All segments ready - compute epoch spike sorting
+        print(f"Computing epoch spike sorting: {epoch_name}")
+        start_time = time.time()
+        
+        templates, spike_times, spike_labels, spike_amplitudes = compute_epoch_spike_sorting(
+            segment_sortings=segment_sortings,
+            segment_duration_sec=segment_duration_sec,
+            num_channels=n_channels
+        )
+        
+        elapsed_time = time.time() - start_time
+        
+        # Save outputs
+        os.makedirs(epoch_sorting_dir, exist_ok=True)
+        
+        templates_path = os.path.join(epoch_sorting_dir, 'templates.npy')
+        spike_times_path = os.path.join(epoch_sorting_dir, 'spike_times.npy')
+        spike_labels_path = os.path.join(epoch_sorting_dir, 'spike_labels.npy')
+        spike_amplitudes_path = os.path.join(epoch_sorting_dir, 'spike_amplitudes.npy')
+        
+        np.save(templates_path, templates)
+        np.save(spike_times_path, spike_times)
+        np.save(spike_labels_path, spike_labels)
+        np.save(spike_amplitudes_path, spike_amplitudes)
+        
+        # Create .info file
+        create_info_file(epoch_sorting_dir.rstrip('/') + '.bin', elapsed_time)
+        
+        print(f"  Saved {len(spike_times)} spikes with {len(templates)} templates")
+        print(f"Created epoch_spike_sorting: {epoch_name}")
+        something_processed = True
+        return True  # Process one at a time
+    
+    return something_processed
+
+
+def process_epoch_preview(raw_dir, computed_dir, n_channels, sampling_frequency, segment_duration_sec, electrode_coords):
+    """
+    Create epoch preview figpacks based on epoch spike sorting.
+    Generates previews showing templates, autocorrelograms, cluster separation,
+    and time-binned firing rates across segments.
+    Returns True if any processing was done.
+    """
+    something_processed = False
+    
+    # Check if raw directory exists
+    if not os.path.exists(raw_dir):
+        return False
+    
+    # Check if epoch_spike_sorting directory exists
+    epoch_sorting_dir = os.path.join(computed_dir, 'epoch_spike_sorting')
+    if not os.path.exists(epoch_sorting_dir):
+        return False
+    
+    # Iterate through epochs with completed spike sorting
+    for epoch_name in sorted(os.listdir(epoch_sorting_dir)):
+        epoch_sorting_path = os.path.join(epoch_sorting_dir, epoch_name)
+        if not os.path.isdir(epoch_sorting_path):
+            continue
+        
+        # Check if all required sorting files exist
+        required_files = ['spike_times.npy', 'spike_labels.npy',
+                         'spike_amplitudes.npy', 'templates.npy']
+        all_exist = all(os.path.exists(os.path.join(epoch_sorting_path, f)) for f in required_files)
+        if not all_exist:
+            continue
+        
+        # Check if preview already exists
+        epoch_preview_dir = os.path.join(computed_dir, 'epoch_preview', epoch_name)
+        preview_path = os.path.join(epoch_preview_dir, 'epoch.figpack')
+        
+        if os.path.exists(preview_path):
+            continue
+        
+        # Get number of segments in this epoch
+        raw_epoch_dir = os.path.join(raw_dir, epoch_name)
+        if not os.path.exists(raw_epoch_dir):
+            continue
+        
+        segment_files = sorted([f for f in os.listdir(raw_epoch_dir) if f.endswith('.bin')])
+        num_segments = len(segment_files)
+        
+        if num_segments == 0:
+            continue
+        
+        # Create preview directory
+        os.makedirs(epoch_preview_dir, exist_ok=True)
+        
+        # Generate epoch preview
+        print(f"Generating epoch preview figpack: {epoch_name}/epoch.figpack")
+        start_time = time.time()
+        
+        generate_epoch_preview(
+            epoch_name=epoch_name,
+            epoch_sorting_path=epoch_sorting_path,
+            computed_dir=computed_dir,
+            n_channels=n_channels,
+            sampling_frequency=sampling_frequency,
+            segment_duration_sec=segment_duration_sec,
+            num_segments=num_segments,
+            electrode_coords=electrode_coords,
+            preview_path=preview_path
+        )
+        
+        elapsed_time = time.time() - start_time
+        
+        # Create .info file
+        create_info_file(os.path.join(epoch_preview_dir, 'epoch'), elapsed_time)
+        
+        print(f"Created epoch_preview: {epoch_name}/epoch.figpack")
+        something_processed = True
+        return True  # Process one at a time
     
     return something_processed

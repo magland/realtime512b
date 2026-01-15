@@ -34,8 +34,35 @@ export interface SegmentsResponse {
   segments: SegmentInfo[];
 }
 
+export interface EpochInfo {
+  name: string;
+  num_segments: number;
+  num_segments_sorted: number;
+  has_epoch_sorting: boolean;
+  has_epoch_preview: boolean;
+}
+
 export interface EpochsResponse {
-  epochs: string[];
+  epochs: EpochInfo[];
+}
+
+export interface EpochSortingStats {
+  num_spikes: number;
+  num_units: number;
+  num_templates: number;
+  duration_sec: number | null;
+  min_time_sec: number | null;
+  max_time_sec: number | null;
+}
+
+export interface EpochDetailResponse {
+  epoch: string;
+  num_segments: number;
+  num_segments_sorted: number;
+  has_epoch_sorting: boolean;
+  has_epoch_preview: boolean;
+  epoch_sorting_stats: EpochSortingStats | null;
+  segments: string[];
 }
 
 export interface ShiftCoefficients {
