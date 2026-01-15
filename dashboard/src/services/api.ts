@@ -9,6 +9,9 @@ import type {
   StatsResponse,
   BinaryDataResponse,
   DataType,
+  ReferenceSegmentResponse,
+  SetReferenceSegmentRequest,
+  SetReferenceSegmentResponse,
 } from '../types';
 
 const API_BASE_URL = 'http://localhost:5000/api';
@@ -111,6 +114,21 @@ class Realtime512bAPI {
       startSec: actualStartSec,
       endSec: actualEndSec,
     };
+  }
+
+  async getReferenceSegment(): Promise<ReferenceSegmentResponse> {
+    const response = await axios.get<ReferenceSegmentResponse>(
+      `${this.baseURL}/reference_segment`
+    );
+    return response.data;
+  }
+
+  async setReferenceSegment(request: SetReferenceSegmentRequest): Promise<SetReferenceSegmentResponse> {
+    const response = await axios.post<SetReferenceSegmentResponse>(
+      `${this.baseURL}/reference_segment`,
+      request
+    );
+    return response.data;
   }
 }
 

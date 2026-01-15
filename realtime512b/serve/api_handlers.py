@@ -375,3 +375,47 @@ def get_epoch_block_preview_file_handler(epoch_block_id, filepath):
         filepath,
         conditional=True  # Enables range request support
     )
+
+
+def get_reference_segment_handler():
+    """Returns the reference segment if it exists."""
+    reference_segment_path = os.path.join(os.getcwd(), "reference_segment.txt")
+    
+    if not os.path.exists(reference_segment_path):
+        return jsonify({"reference_segment": None})
+    
+    with open(reference_segment_path, "r") as f:
+        reference_segment = f.read().strip()
+    
+    return jsonify({"reference_segment": reference_segment})
+
+
+def set_reference_segment_handler():
+    """Sets the reference segment by creating reference_segment.txt file."""
+    reference_segment_path = os.path.join(os.getcwd(), "reference_segment.txt")
+    
+    # Check if reference segment already exists
+    if os.path.exists(reference_segment_path):
+        return jsonify({"error": "Reference segment already set"}), 400
+    
+    # Get segment path from request body
+    data = request.get_json()
+    if not data or "epoch_block_id" not in data or "filename" not in data:
+        return jsonify({"error": "Missing epoch_block_id or filename in request body"}), 400
+    
+    epoch_block_id = data["epoch_block_id"]
+    filename = data["filename"]
+    
+    # Verify the segment exists
+    raw_dir = os.path.join(os.getcwd(), "raw", epoch_block_id)
+    segment_path = os.path.join(raw_dir, filename)
+    
+    if not os.path.exists(segment_path):
+        return jsonify({"error": f"Segment {epoch_block_id}/{filename} not found"}), 404
+    
+    # Create reference_segment.txt file
+    reference_segment_value = f"{epoch_block_id}/{filename}"
+    with open(reference_segment_path, "w") as f:
+        f.write(reference_segment_value + "\n")
+    
+    return jsonify({"reference_segment": reference_segment_value, "message": "Reference segment set successfully"})

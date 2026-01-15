@@ -53,7 +53,19 @@ You will be able to monitor the processing status and visualize data.
 
 ### Specifying the reference segment
 
-After some initial processing runs, you will need to specify the reference segment by creating a `reference_segment.txt` file in the experiment directory. The file should contain one line with the text
+After some initial processing runs, you will need to specify the reference segment. You can do this in one of two ways:
+
+#### Option 1: Using the Dashboard UI (Recommended)
+
+1. Open the dashboard and navigate to the segment detail page for the segment you want to use as reference
+2. Click the "Set as Reference Segment" button
+3. The reference segment will be set and cannot be changed afterwards
+
+The button is only available if no reference segment has been set yet. Once set, the segment will display a "Reference Segment" badge.
+
+#### Option 2: Manually creating the file
+
+Alternatively, you can manually create a `reference_segment.txt` file in the experiment directory. The file should contain one line with the text:
 
 ```
 epoch_block_name/segment_002.bin

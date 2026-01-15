@@ -99,3 +99,20 @@ export type DataType = 'raw' | 'filt' | 'shifted';
 export interface SegmentWithEpochBlock extends SegmentInfo {
   epochBlock: string;
 }
+
+// Reference segment response
+export interface ReferenceSegmentResponse {
+  reference_segment: string | null;
+}
+
+// Set reference segment request
+export interface SetReferenceSegmentRequest {
+  epoch_block_id: string;
+  filename: string;
+}
+
+// Set reference segment response
+export interface SetReferenceSegmentResponse {
+  reference_segment: string;
+  message: string;
+}

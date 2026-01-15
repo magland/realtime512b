@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -17,12 +17,14 @@ import {
   TableHead,
   TableRow,
   Paper,
+  Snackbar,
 } from '@mui/material';
 import {
   ArrowBack as ArrowBackIcon,
   CheckCircle as CheckIcon,
   Cancel as ErrorIcon,
   OpenInNew as OpenInNewIcon,
+  Star as StarIcon,
 } from '@mui/icons-material';
 import { usePolling } from '../../hooks/usePolling';
 import { api, getPreviewUrl } from '../../services/api';
@@ -31,6 +33,10 @@ import { navigateWithQuery } from '../../utils/navigation';
 export function SegmentDetailView() {
   const { epochBlockId, filename } = useParams<{ epochBlockId: string; filename: string }>();
   const navigate = useNavigate();
+  const [isSettingReference, setIsSettingReference] = useState(false);
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState('');
+  const [snackbarSeverity, setSnackbarSeverity] = useState<'success' | 'error'>('success');
 
   const fetchSegments = useCallback(() => {
     if (!epochBlockId) return Promise.reject(new Error('No epoch ID'));
@@ -47,6 +53,10 @@ export function SegmentDetailView() {
     return api.getHighActivity(epochBlockId, filename);
   }, [epochBlockId, filename]);
 
+  const fetchReferenceSegment = useCallback(() => {
+    return api.getReferenceSegment();
+  }, []);
+
   const {
     data: segmentsData,
     error: segmentsError,
@@ -62,6 +72,31 @@ export function SegmentDetailView() {
     data: highActivityData,
     error: highActivityError,
   } = usePolling(fetchHighActivity, { interval: 10000 });
+
+  const {
+    data: referenceSegmentData,
+  } = usePolling(fetchReferenceSegment, { interval: 5000 });
+
+  const handleSetReferenceSegment = async () => {
+    if (!epochBlockId || !filename) return;
+    
+    setIsSettingReference(true);
+    try {
+      await api.setReferenceSegment({
+        epoch_block_id: epochBlockId,
+        filename: filename,
+      });
+      setSnackbarMessage('Reference segment set successfully!');
+      setSnackbarSeverity('success');
+      setSnackbarOpen(true);
+    } catch (error: any) {
+      setSnackbarMessage(error.response?.data?.error || 'Failed to set reference segment');
+      setSnackbarSeverity('error');
+      setSnackbarOpen(true);
+    } finally {
+      setIsSettingReference(false);
+    }
+  };
 
   if (segmentsLoading) {
     return (
@@ -89,18 +124,41 @@ export function SegmentDetailView() {
     );
   }
 
+  const referenceSegment = referenceSegmentData?.reference_segment;
+  const isReferenceSegment = referenceSegment === `${epochBlockId}/${filename}`;
+  const canSetAsReference = !referenceSegment;
+
   return (
     <Box>
-      <Box display="flex" alignItems="center" mb={3} gap={2}>
+      <Box display="flex" alignItems="center" mb={3} gap={2} flexWrap="wrap">
         <Button
           startIcon={<ArrowBackIcon />}
           onClick={() => navigate(navigateWithQuery('/segments'))}
         >
           Back to Segments
         </Button>
-        <Typography variant="h4">
+        <Typography variant="h4" sx={{ flex: 1 }}>
           {epochBlockId}/{filename}
         </Typography>
+        {isReferenceSegment && (
+          <Chip
+            icon={<StarIcon />}
+            label="Reference Segment"
+            color="warning"
+            variant="outlined"
+          />
+        )}
+        {canSetAsReference && (
+          <Button
+            variant="contained"
+            color="primary"
+            startIcon={<StarIcon />}
+            onClick={handleSetReferenceSegment}
+            disabled={isSettingReference}
+          >
+            {isSettingReference ? 'Setting...' : 'Set as Reference Segment'}
+          </Button>
+        )}
       </Box>
 
       <Stack spacing={3}>
@@ -281,6 +339,21 @@ export function SegmentDetailView() {
           </CardContent>
         </Card>
       </Stack>
+
+      <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={6000}
+        onClose={() => setSnackbarOpen(false)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert
+          onClose={() => setSnackbarOpen(false)}
+          severity={snackbarSeverity}
+          sx={{ width: '100%' }}
+        >
+          {snackbarMessage}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }

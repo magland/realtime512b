@@ -15,6 +15,8 @@ from .api_handlers import (
     get_preview_file_handler,
     get_epoch_block_detail_handler,
     get_epoch_block_preview_file_handler,
+    get_reference_segment_handler,
+    set_reference_segment_handler,
 )
 
 
@@ -44,6 +46,8 @@ def run_serve(host="0.0.0.0", port=5000):
     print("  GET /api/epoch_blocks/<epoch_block_id> - EpochBlock details and epoch block sorting stats")
     print("  GET /api/epoch_blocks/<epoch_block_id>/segments - Segments in an epoch_block")
     print("  GET /api/shift_coefficients - Shift coefficients")
+    print("  GET /api/reference_segment - Get reference segment info")
+    print("  POST /api/reference_segment - Set reference segment")
     print("  GET /api/raw/<epoch_block_id>/<filename>?start_sec=X&end_sec=Y - Raw data")
     print("  GET /api/filt/<epoch_block_id>/<filename>?start_sec=X&end_sec=Y - Filtered data")
     print("  GET /api/shifted/<epoch_block_id>/<filename>?start_sec=X&end_sec=Y - Shifted data")
@@ -113,6 +117,14 @@ def run_serve(host="0.0.0.0", port=5000):
     @app.route("/api/epoch_block_preview/<epoch_block_id>/<path:filepath>", methods=["GET"])
     def get_epoch_block_preview_file(epoch_block_id, filepath):
         return get_epoch_block_preview_file_handler(epoch_block_id, filepath)
+    
+    @app.route("/api/reference_segment", methods=["GET"])
+    def get_reference_segment():
+        return get_reference_segment_handler()
+    
+    @app.route("/api/reference_segment", methods=["POST"])
+    def set_reference_segment():
+        return set_reference_segment_handler()
     
     # Run the server
     app.run(host=host, port=port, debug=False)
