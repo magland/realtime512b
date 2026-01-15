@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=45", "wheel", "setuptools_scm[toml]>=6.2"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "realtime512b"
+version = "0.1.0"
+description = "Real-time processing of multi-electrode neural data"
+readme = "README.md"
+requires-python = ">=3.8"
+license = {text = "MIT"}
+authors = [
+    {name = "realtime512b developers"}
+]
+dependencies = [
+    "click>=8.0",
+    "pyyaml>=6.0",
+    "numpy>=1.20",
+    "scipy>=1.7",
+]
+
+[project.optional-dependencies]
+bin2py = ["bin2py"]
+full = [
+    "bin2py",
+    "scikit-learn>=1.0",
+    "isosplit>=0.2",
+]
+
+[project.scripts]
+realtime512b = "realtime512b.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["realtime512b*"]
