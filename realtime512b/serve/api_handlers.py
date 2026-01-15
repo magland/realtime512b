@@ -27,9 +27,9 @@ def get_epochs_handler():
         return jsonify({"error": "raw/ directory not found"}), 404
     
     epochs_info = []
-    for item in os.listdir(raw_dir):
+    for item in sorted(os.listdir(raw_dir)):
         item_path = os.path.join(raw_dir, item)
-        if os.path.isdir(item_path) and item.startswith("epoch_"):
+        if os.path.isdir(item_path):
             # Get number of segments in this epoch
             segment_files = [f for f in os.listdir(item_path) if f.endswith(".bin")]
             num_segments = len(segment_files)

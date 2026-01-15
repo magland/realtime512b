@@ -48,8 +48,10 @@ class EpochProcessor:
             print(f"Processing epoch: {epoch_name}")
             
             # Read epoch data
+            print(f"  Reading data from {epoch_name}...")
             epoch_path = os.path.join(self.acquisition_dir, epoch_name)
             data = self._read_epoch_data(epoch_path)
+            print(f"  Read data from {epoch_name}: {data.shape} shape" if data is not None else f"  Failed to read data from {epoch_name}")
             
             if data is None:
                 print(f"  Warning: Could not read data from {epoch_name}, skipping")
@@ -131,7 +133,7 @@ class EpochProcessor:
                 
                 # Preallocate array (excluding channel 0 which is TTL)
                 # We expect n_electrodes channels, where channel 0 is TTL
-                data = np.zeros((total_samples, n_electrodes - 1), dtype=np.float32)
+                data = np.zeros((total_samples, n_electrodes), dtype=np.float32)
                 
                 # Read data in chunks
                 data_offset = 0
