@@ -33,3 +33,6 @@ realtime512b = "realtime512b.cli:main"
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["realtime512b*"]
+
+[tool.setuptools.package-data]
+realtime512b = ["templates/*.md", "figpack_realtime512b.js"]

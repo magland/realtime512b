@@ -3,6 +3,7 @@
 import os
 import sys
 import time
+import shutil
 
 from .config_utils import load_config, load_electrode_coords
 from .epoch_block_processor import EpochBlockProcessor
@@ -27,6 +28,23 @@ def run_start():
     except Exception as e:
         print(f"\n❌ Unexpected error during UI build: {e}", file=sys.stderr)
         sys.exit(1)
+    
+    # Copy experiment README if it doesn't exist
+    readme_path = os.path.join(os.getcwd(), "README.md")
+    if not os.path.exists(readme_path):
+        # Get the template README path
+        package_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        template_path = os.path.join(package_dir, "templates", "experiment_readme.md")
+        
+        if os.path.exists(template_path):
+            try:
+                shutil.copy(template_path, readme_path)
+                print("✓ Created README.md in experiment directory")
+                print()
+            except Exception as e:
+                print(f"Warning: Could not copy README template: {e}", file=sys.stderr)
+        else:
+            print(f"Warning: README template not found at {template_path}", file=sys.stderr)
     
     print("=" * 60)
     print("realtime512b - Starting real-time processing")
