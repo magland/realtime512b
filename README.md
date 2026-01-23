@@ -47,7 +47,7 @@ realtime512b serve
 ### Open the dashboard
 
 With the server running, open the dashboard in your web browser at
-[https://](https://realtime512b-dashboard.vercel.app/)
+[https://realtime512b-dashboard.vercel.app/](https://realtime512b-dashboard.vercel.app/)
 
 You will be able to monitor the processing status and visualize data.
 
