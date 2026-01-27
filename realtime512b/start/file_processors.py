@@ -774,7 +774,7 @@ def process_epoch_block_spike_sorting(raw_dir, acquisition_dir, computed_dir, n_
         # Try export to vision format
         try:
             raw_data_path = os.path.join(acquisition_dir, epoch_block_name)  # folder with .bin files
-            vision_path = epoch_block_sorting_dir                   # or another output dir
+            vision_path = os.path.join(epoch_block_sorting_dir, 'rt512')
             vision_dset_name = epoch_block_name
             # Convert spike_times from seconds to samples
             spike_times_samples = (spike_times * sampling_frequency).astype(np.int64)
