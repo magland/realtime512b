@@ -175,7 +175,7 @@ def run_start():
                     up_to_date_printed = False
                 
                 # Process epoch block spike sorting
-                if process_epoch_block_spike_sorting(raw_dir, computed_dir, n_channels, segment_duration_sec):
+                if process_epoch_block_spike_sorting(raw_dir, acquisition_dir, computed_dir, n_channels, segment_duration_sec, sampling_frequency):
                     something_processed = True
                     up_to_date_printed = False
                 

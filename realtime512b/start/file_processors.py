@@ -16,6 +16,7 @@ from ..helpers.epoch_block_spike_sorting import compute_epoch_block_spike_sortin
 from ..helpers.receptive_fields import compute_receptive_fields
 from ..helpers.file_info import create_info_file
 from ..helpers.generate_preview import generate_preview, generate_epoch_block_preview
+from ..helpers.vision_export import save_spike_times_vision_format
 
 
 def get_reference_segment():
@@ -426,7 +427,6 @@ def process_reference_sorting(computed_dir, reference_segment, n_channels, sampl
     print(f"Created reference_sorting: {reference_segment}")
     return True
 
-
 def process_spike_sorting(computed_dir, reference_segment, n_channels, sampling_frequency, electrode_coords, coarse_sorting_detect_threshold):
     """
     Create spike sorting data for all segments by matching to reference sorting.
@@ -657,7 +657,7 @@ def process_preview(computed_dir, reference_segment, n_channels, sampling_freque
     return something_processed
 
 
-def process_epoch_block_spike_sorting(raw_dir, computed_dir, n_channels, segment_duration_sec):
+def process_epoch_block_spike_sorting(raw_dir, acquisition_dir, computed_dir, n_channels, segment_duration_sec, sampling_frequency):
     """
     Create epoch_block-level spike sorting by combining segment spike sortings.
     Pieces together spike times, labels, and amplitudes from all segments,
@@ -770,6 +770,24 @@ def process_epoch_block_spike_sorting(raw_dir, computed_dir, n_channels, segment
         
         # Create .info file
         create_info_file(epoch_block_sorting_dir.rstrip('/') + '.bin', elapsed_time)
+
+        # Try export to vision format
+        try:
+            raw_data_path = os.path.join(acquisition_dir, epoch_block_name)  # folder with .bin files
+            vision_path = epoch_block_sorting_dir                   # or another output dir
+            vision_dset_name = epoch_block_name
+            # Convert spike_times from seconds to samples
+            spike_times_samples = (spike_times * sampling_frequency).astype(np.int64)
+            save_spike_times_vision_format(
+                raw_data_path=raw_data_path,
+                spike_times=spike_times_samples,
+                spike_labels=spike_labels,
+                vision_path=vision_path,
+                vision_dset_name=vision_dset_name
+            )
+        except Exception as e:
+            print(f"Vision export failed: {e}")
+            
         
         print(f"  Saved {len(spike_times)} spikes with {len(templates)} templates")
         print(f"Created epoch_block_spike_sorting: {epoch_block_name}")
