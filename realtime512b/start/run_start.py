@@ -62,6 +62,7 @@ def run_start():
         process_reference_sorting,
         process_spike_sorting,
         process_epoch_block_spike_sorting,
+        process_vision_export,
         process_receptive_fields,
         process_preview,
         process_epoch_block_preview
@@ -178,9 +179,13 @@ def run_start():
                 if process_epoch_block_spike_sorting(raw_dir, acquisition_dir, computed_dir, n_channels, segment_duration_sec, sampling_frequency):
                     something_processed = True
                     up_to_date_printed = False
+
+                if process_vision_export(os.getcwd(), computed_dir, acquisition_dir, sampling_frequency):
+                    something_processed = True
+                    up_to_date_printed = False
                 
                 # Process receptive fields
-                if process_receptive_fields(raw_dir, computed_dir, acquisition_dir):
+                if process_receptive_fields(os.getcwd(), raw_dir, computed_dir, acquisition_dir):
                     something_processed = True
                     up_to_date_printed = False
                 

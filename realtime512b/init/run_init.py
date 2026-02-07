@@ -31,6 +31,10 @@ def run_init():
     # Collect configuration parameters with defaults
     config = {}
     
+    # Experiment name
+    exp_name = input("Enter experiment name [default: my_experiment]: ").strip()
+    config['exp_name'] = exp_name if exp_name else "my_experiment"
+    
     # Sampling frequency
     fs_input = input("Enter sampling frequency (Hz) [default: 20000]: ").strip()
     config['sampling_frequency'] = int(fs_input) if fs_input else 20000

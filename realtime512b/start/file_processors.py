@@ -770,24 +770,6 @@ def process_epoch_block_spike_sorting(raw_dir, acquisition_dir, computed_dir, n_
         
         # Create .info file
         create_info_file(epoch_block_sorting_dir.rstrip('/') + '.bin', elapsed_time)
-
-        # Try export to vision format
-        try:
-            raw_data_path = os.path.join(acquisition_dir, epoch_block_name)  # folder with .bin files
-            vision_path = os.path.join(epoch_block_sorting_dir, 'rt512')
-            vision_dset_name = epoch_block_name
-            # Convert spike_times from seconds to samples
-            spike_times_samples = (spike_times * sampling_frequency).astype(np.int64)
-            save_spike_times_vision_format(
-                raw_data_path=raw_data_path,
-                spike_times=spike_times_samples,
-                spike_labels=spike_labels,
-                vision_path=vision_path,
-                vision_dset_name=vision_dset_name
-            )
-        except Exception as e:
-            print(f"Vision export failed: {e}")
-            
         
         print(f"  Saved {len(spike_times)} spikes with {len(templates)} templates")
         print(f"Created epoch_block_spike_sorting: {epoch_block_name}")
@@ -796,8 +778,63 @@ def process_epoch_block_spike_sorting(raw_dir, acquisition_dir, computed_dir, n_
     
     return something_processed
 
+def process_vision_export(parent_dir, computed_dir, acquisition_dir, sampling_frequency):
+    """
+    Export epoch block spike sorting results to vision format if not already exported.
+    Returns True if any export was performed.
+    """
+    epoch_block_sorting_dir = os.path.join(computed_dir, 'epoch_block_spike_sorting')
+    if not os.path.exists(epoch_block_sorting_dir):
+        return False
 
-def process_receptive_fields(raw_dir, computed_dir, acquisition_dir):
+    something_processed = False
+
+    for epoch_block_name in sorted(os.listdir(epoch_block_sorting_dir)):
+        epoch_block_sorting_path = os.path.join(epoch_block_sorting_dir, epoch_block_name)
+        if not os.path.isdir(epoch_block_sorting_path):
+            continue
+
+        # Check if all required sorting files exist
+        required_files = ['spike_times.npy', 'spike_labels.npy']
+        all_exist = all(os.path.exists(os.path.join(epoch_block_sorting_path, f)) for f in required_files)
+        if not all_exist:
+            continue
+
+        vision_path = os.path.join(parent_dir, epoch_block_name, 'rt512')
+        # Make dirs if not exist
+        os.makedirs(os.path.join(parent_dir, epoch_block_name), exist_ok=True)
+        os.makedirs(vision_path, exist_ok=True)
+        vision_dset_name = epoch_block_name
+
+        # Check if vision export already exists
+        vision_globals_path = os.path.join(vision_path, f"{vision_dset_name}.globals")
+        if os.path.exists(vision_globals_path):
+            continue
+
+        # Load spike data
+        spike_times = np.load(os.path.join(epoch_block_sorting_path, 'spike_times.npy'))
+        spike_labels = np.load(os.path.join(epoch_block_sorting_path, 'spike_labels.npy'))
+        spike_times_samples = (spike_times * sampling_frequency).astype(np.int64)
+
+        raw_data_path = os.path.join(acquisition_dir, epoch_block_name)
+        try:
+            save_spike_times_vision_format(
+                raw_data_path=raw_data_path,
+                spike_times=spike_times_samples,
+                spike_labels=spike_labels,
+                vision_path=vision_path,
+                vision_dset_name=vision_dset_name
+            )
+            print(f"Exported vision format: {epoch_block_name}")
+            something_processed = True
+            return True  # Only process one at a time
+        except Exception as e:
+            print(f"Vision export failed for {epoch_block_name}: {e}")
+
+    return something_processed
+
+
+def process_receptive_fields(parent_dir, raw_dir, computed_dir, acquisition_dir):
     """
     Compute receptive fields for epoch blocks with completed spike sorting.
     Generates 5D receptive field arrays from spike data and acquisition files.
@@ -848,11 +885,7 @@ def process_receptive_fields(raw_dir, computed_dir, acquisition_dir):
         print(f"Computing receptive fields: {epoch_block_name}")
         start_time = time.time()
         
-        receptive_fields = compute_receptive_fields(
-            spike_times=spike_times,
-            spike_labels=spike_labels,
-            acquisition_dir=epoch_block_acquisition_dir
-        )
+        receptive_fields = compute_receptive_fields(parent_dir, epoch_block_name)
         
         elapsed_time = time.time() - start_time
         
