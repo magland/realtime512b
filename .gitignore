@@ -1,5 +1,6 @@
 reference
-experiment*
+experiment1
+experiment_bin2*
 
 # Python
 __pycache__/
