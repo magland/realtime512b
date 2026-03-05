@@ -139,60 +139,46 @@ def run_start():
                 if not up_to_date_printed:
                     print(f"Reference segment {reference_segment} not yet in raw/, waiting...")
             else:
-                # Process filtering
+                # Critical steps (run first, before any deferred work)
+                critical_processed = False
+
                 if process_filtering(raw_dir, computed_dir, n_channels, filter_params, sampling_frequency):
-                    something_processed = True
-                    up_to_date_printed = False
-                
-                # Process shift coefficients (only for reference)
+                    critical_processed = True
+
                 if process_shift_coeffs(computed_dir, reference_segment, electrode_coords, sampling_frequency):
-                    something_processed = True
-                    up_to_date_printed = False
-                
-                # Process shifting
+                    critical_processed = True
+
                 if process_shifting(computed_dir, n_channels, electrode_coords, sampling_frequency):
-                    something_processed = True
-                    up_to_date_printed = False
-                
-                # Process stats
-                if process_stats(computed_dir, n_channels, sampling_frequency, detect_threshold_for_spike_stats):
-                    something_processed = True
-                    up_to_date_printed = False
-                
-                # Process high activity
+                    critical_processed = True
+
                 if process_high_activity(computed_dir, n_channels, sampling_frequency, high_activity_threshold):
-                    something_processed = True
-                    up_to_date_printed = False
-                
-                # Process reference sorting
+                    critical_processed = True
+
                 if process_reference_sorting(computed_dir, reference_segment, n_channels, sampling_frequency, electrode_coords, coarse_sorting_detect_threshold):
-                    something_processed = True
-                    up_to_date_printed = False
-                
-                # Process spike sorting
+                    critical_processed = True
+
                 if process_spike_sorting(computed_dir, reference_segment, n_channels, sampling_frequency, electrode_coords, coarse_sorting_detect_threshold):
+                    critical_processed = True
+
+                if critical_processed:
                     something_processed = True
                     up_to_date_printed = False
-                
-                # Process epoch block spike sorting
-                if process_epoch_block_spike_sorting(raw_dir, computed_dir, n_channels, segment_duration_sec):
-                    something_processed = True
-                    up_to_date_printed = False
-                
-                # Process receptive fields
-                if process_receptive_fields(raw_dir, computed_dir, acquisition_dir):
-                    something_processed = True
-                    up_to_date_printed = False
-                
-                # Process epoch block preview generation
-                if process_epoch_block_preview(raw_dir, computed_dir, acquisition_dir, n_channels, sampling_frequency, segment_duration_sec, electrode_coords):
-                    something_processed = True
-                    up_to_date_printed = False
-                
-                # Process preview generation
-                if process_preview(computed_dir, reference_segment, n_channels, sampling_frequency, electrode_coords):
-                    something_processed = True
-                    up_to_date_printed = False
+                    continue  # Go back to top to re-check critical steps
+
+                # Deferred steps (only run when critical steps are caught up)
+                # Run one at a time, then loop back to check critical steps
+                deferred_steps = [
+                    lambda: process_stats(computed_dir, n_channels, sampling_frequency, detect_threshold_for_spike_stats),
+                    lambda: process_epoch_block_spike_sorting(raw_dir, computed_dir, n_channels, segment_duration_sec),
+                    lambda: process_receptive_fields(raw_dir, computed_dir, acquisition_dir),
+                    lambda: process_epoch_block_preview(raw_dir, computed_dir, acquisition_dir, n_channels, sampling_frequency, segment_duration_sec, electrode_coords),
+                    lambda: process_preview(computed_dir, reference_segment, n_channels, sampling_frequency, electrode_coords),
+                ]
+                for step in deferred_steps:
+                    if step():
+                        something_processed = True
+                        up_to_date_printed = False
+                        break  # Loop back to check critical steps
         
         # Print status
         if not something_processed:
