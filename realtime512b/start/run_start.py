@@ -186,9 +186,8 @@ def run_start():
                 print("All files are up to date.")
                 print()
                 up_to_date_printed = True
-        
-        # Sleep for 5 seconds
-        time.sleep(5)
+            # Only sleep when there's nothing to do
+            time.sleep(5)
 
 
 if __name__ == "__main__":
